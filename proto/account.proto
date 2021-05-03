@@ -1,0 +1,50 @@
+// protoc -I . user.proto --go_out=plugins=grpc:.
+// protoc -I . user.proto --grpc-gateway_out . --go_out=plugins=grpc:.
+// go get github.com/golang/protobuf/protoc-gen-go
+// go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+// go get github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+
+syntax = "proto3";
+
+option go_package = "/go_proto";
+
+import "google/api/annotations.proto";
+
+package account;
+
+service AccountService {
+  rpc CreateAccount(AccountRequest) returns (AccountResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/account"
+      body: "*"
+    };
+  }
+  rpc DeleteAccount(IdRequest) returns (AccountResponse) {
+    option(google.api.http) = {
+      delete: "/api/v1/account/{id}"
+    };
+  }
+  rpc UpdateAccount(AccountRequest) returns (AccountResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/account"
+      body: "*"
+    };
+  }
+  rpc GetAccount(IdRequest) returns (AccountResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/account/{id}"
+    };
+  }
+}
+
+message AccountRequest {
+  string account = 1;
+}
+
+message AccountResponse {
+  string account = 1;
+}
+
+message IdRequest {
+  int64 id = 1;
+}
