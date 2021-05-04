@@ -1,116 +1,99 @@
 package api
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
-	"strconv"
+	"context"
+	"fmt"
+	log "github.com/sirupsen/logrus"
 
 	//"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
 	"golang-training-theater-grpc/pkg/data"
+	pb "golang-training-theater-grpc/proto/go_proto"
 )
 
-type locationAPI struct {
+type LocationServer struct {
 	data *data.LocationData
 }
 
-func (l locationAPI) createLocation(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Location)
-	err := json.NewDecoder(request.Body).Decode(&entity)
-	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	id, err := l.data.AddLocation(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to create location"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-	err = json.NewEncoder(writer).Encode(id)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	writer.WriteHeader(http.StatusCreated)
+func NewLocationServer(a data.LocationData) *LocationServer {
+	return &LocationServer{data: &a}
 }
 
-func (l locationAPI) deleteLocationById(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Location)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+func (l LocationServer) CreateLocation(ctx context.Context, in *pb.LocationRequest) (*pb.IdLocationResponse, error) {
+	entity := data.Location{
+		AccountId:   int(in.GetAccountId()),
+		Address:     in.GetAddress(),
+		PhoneNumber: in.GetPhoneNumber(),
 	}
+	id, err := l.data.AddLocation(entity)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"location": entity,
+		}).Warningf("got an error when tried to create location: %s", err)
+		return &pb.IdLocationResponse{Id: -1}, fmt.Errorf("got an error when tried to create location: %w", err)
+	}
+	entity.Id = id
+	log.WithFields(log.Fields{
+		"location": entity,
+	}).Info("create location")
+	return &pb.IdLocationResponse{Id: int64(id)}, nil
+}
+
+func (l LocationServer) DeleteLocation(ctx context.Context, in *pb.IdLocationRequest) (*pb.StatusLocationResponse, error) {
+	entity := new(data.Location)
+	entity.Id = int(in.Id)
 	err := l.data.DeleteLocation(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to delete location"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to delete location: %s", err)
+		return &pb.StatusLocationResponse{Message: "got an error when tried to delete location"},
+			fmt.Errorf("got an error when tried to delete location: %w", err)
 	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("location deletion was successful")
+	return &pb.StatusLocationResponse{Message: "location deletion was successful"}, nil
 }
 
-func (l locationAPI) updateLocation(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Location)
-	err := json.NewDecoder(request.Body).Decode(&entity)
+func (l LocationServer) UpdateLocation(ctx context.Context, in *pb.LocationRequest) (*pb.StatusLocationResponse, error) {
+	entity := data.Location{
+		Id:          int(in.GetId()),
+		AccountId:   int(in.GetAccountId()),
+		Address:     in.GetAddress(),
+		PhoneNumber: in.GetPhoneNumber(),
+	}
+	err := l.data.UpdateLocation(entity)
 	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+		log.WithFields(log.Fields{
+			"location": entity,
+		}).Warningf("got an error when tried to update location: %s", err)
+		return &pb.StatusLocationResponse{Message: "got an error when tried to update location"},
+			fmt.Errorf("got an error when tried to update location: %w", err)
 	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err = l.data.UpdateLocation(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to update location"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
+	log.WithFields(log.Fields{
+		"location": entity,
+	}).Info("location update was successful")
+	return &pb.StatusLocationResponse{Message: "location update was successful"}, nil
 }
 
-func (l locationAPI) getLocationById(writer http.ResponseWriter, request *http.Request) {
+func (l LocationServer) GetLocation(ctx context.Context, in *pb.IdLocationRequest) (*pb.LocationResponse, error) {
 	entity := new(data.Location)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	entity.Id = int(in.Id)
 	entry, err := l.data.FindByIdLocation(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to get location"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to get location: %s", err)
+		return &pb.LocationResponse{},
+			fmt.Errorf("got an error when tried to get location: %w", err)
 	}
-	err = json.NewEncoder(writer).Encode(entry)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("account was successfully received")
+	return &pb.LocationResponse{
+		Id:          int64(entry.Id),
+		AccountId:   int64(entry.AccountId),
+		Address:     entry.Address,
+		PhoneNumber: entry.PhoneNumber,
+	}, nil
 }

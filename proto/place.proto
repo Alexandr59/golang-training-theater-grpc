@@ -1,0 +1,59 @@
+// protoc -I . place.proto --go_out=plugins=grpc:.
+// protoc -I . place.proto --grpc-gateway_out . --go_out=plugins=grpc:.
+
+syntax = "proto3";
+
+option go_package = "/go_proto";
+
+import "google/api/annotations.proto";
+
+package place;
+
+service PlaceService {
+  rpc CreatePlace(PlaceRequest) returns (IdPlaceResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/place"
+      body: "*"
+    };
+  }
+  rpc DeletePlace(IdPlaceRequest) returns (StatusPlaceResponse) {
+    option(google.api.http) = {
+      delete: "/api/v1/place/{id}"
+    };
+  }
+  rpc UpdatePlace(PlaceRequest) returns (StatusPlaceResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/place"
+      body: "*"
+    };
+  }
+  rpc GetPlace(IdPlaceRequest) returns (PlaceResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/place/{id}"
+    };
+  }
+}
+
+message PlaceRequest {
+  int64 Id = 1;
+  int64 SectorId = 2;
+  string Name = 3;
+}
+
+message PlaceResponse {
+  int64 Id = 1;
+  int64 SectorId = 2;
+  string Name = 3;
+}
+
+message IdPlaceRequest {
+  int64 id = 1;
+}
+
+message IdPlaceResponse {
+  int64 id = 1;
+}
+
+message StatusPlaceResponse{
+  string message = 1;
+}

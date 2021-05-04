@@ -1,134 +1,131 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
-	"log"
-	"net/http"
-	"strconv"
-
+	"fmt"
+	log "github.com/sirupsen/logrus"
 	//"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
 	"golang-training-theater-grpc/pkg/data"
+	pb "golang-training-theater-grpc/proto/go_proto"
 )
 
-type ticketAPI struct {
+type TicketServer struct {
 	data *data.TicketData
 }
 
-func (t ticketAPI) createTicket(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Ticket)
-	err := json.NewDecoder(request.Body).Decode(&entity)
-	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	id, err := t.data.AddTicket(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to create ticket"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-	err = json.NewEncoder(writer).Encode(id)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	writer.WriteHeader(http.StatusCreated)
+func NewTicketServer(a data.TicketData) *TicketServer {
+	return &TicketServer{data: &a}
 }
 
-func (t ticketAPI) deleteTicketById(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Ticket)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+func (t TicketServer) CreateTicket(ctx context.Context, in *pb.TicketRequest) (*pb.IdTicketResponse, error) {
+	entity := data.Ticket{
+		AccountId:   int(in.GetAccountId()),
+		ScheduleId:  int(in.GetScheduleId()),
+		PlaceId:     int(in.GetPlaceId()),
+		DateOfIssue: in.GetDateOfIssue(),
+		Paid:        in.GetPaid(),
+		Reservation: in.GetReservation(),
+		Destroyed:   in.GetDestroyed(),
 	}
+	id, err := t.data.AddTicket(entity)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"ticket": entity,
+		}).Warningf("got an error when tried to create ticket: %s", err)
+		return &pb.IdTicketResponse{Id: -1}, fmt.Errorf("got an error when tried to create ticket: %w", err)
+	}
+	entity.Id = id
+	log.WithFields(log.Fields{
+		"ticket": entity,
+	}).Info("create ticket")
+	return &pb.IdTicketResponse{Id: int64(id)}, nil
+}
+
+func (t TicketServer) DeleteTicket(ctx context.Context, in *pb.IdTicketRequest) (*pb.StatusTicketResponse, error) {
+	entity := new(data.Ticket)
+	entity.Id = int(in.Id)
 	err := t.data.DeleteTicket(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to delete ticket"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to delete ticket: %s", err)
+		return &pb.StatusTicketResponse{Message: "got an error when tried to delete ticket"},
+			fmt.Errorf("got an error when tried to delete ticket: %w", err)
 	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("ticket deletion was successful")
+	return &pb.StatusTicketResponse{Message: "ticket deletion was successful"}, nil
 }
 
-func (t ticketAPI) updateTicket(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Ticket)
-	err := json.NewDecoder(request.Body).Decode(&entity)
+func (t TicketServer) UpdateTicket(ctx context.Context, in *pb.TicketRequest) (*pb.StatusTicketResponse, error) {
+	entity := data.Ticket{
+		Id:          int(in.GetId()),
+		AccountId:   int(in.GetAccountId()),
+		ScheduleId:  int(in.GetScheduleId()),
+		PlaceId:     int(in.GetPlaceId()),
+		DateOfIssue: in.GetDateOfIssue(),
+		Paid:        in.GetPaid(),
+		Reservation: in.GetReservation(),
+		Destroyed:   in.GetDestroyed(),
+	}
+	err := t.data.UpdateTicket(entity)
 	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+		log.WithFields(log.Fields{
+			"ticket": entity,
+		}).Warningf("got an error when tried to update ticket: %s", err)
+		return &pb.StatusTicketResponse{Message: "got an error when tried to update ticket"},
+			fmt.Errorf("got an error when tried to update ticket: %w", err)
 	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err = t.data.UpdateTicket(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to update ticket"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
+	log.WithFields(log.Fields{
+		"ticket": entity,
+	}).Info("ticket update was successful")
+	return &pb.StatusTicketResponse{Message: "ticket update was successful"}, nil
 }
 
-func (t ticketAPI) getTicketById(writer http.ResponseWriter, request *http.Request) {
+func (t TicketServer) GetTicket(ctx context.Context, in *pb.IdTicketRequest) (*pb.TicketResponse, error) {
 	entity := new(data.Ticket)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	entity.Id = int(in.Id)
 	entry, err := t.data.FindByIdTicket(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to get ticket"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to get ticket: %s", err)
+		return &pb.TicketResponse{},
+			fmt.Errorf("got an error when tried to get ticket: %w", err)
 	}
-	err = json.NewEncoder(writer).Encode(entry)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("ticket was successfully received")
+	return &pb.TicketResponse{
+		Id:          int64(entry.Id),
+		AccountId:   int64(entry.AccountId),
+		ScheduleId:  int64(entry.ScheduleId),
+		PlaceId:     int64(entry.PlaceId),
+		DateOfIssue: entry.DateOfIssue,
+		Paid:        entry.Paid,
+		Reservation: entry.Reservation,
+		Destroyed:   entry.Destroyed,
+	}, nil
 }
 
-func (t ticketAPI) getAllTickets(writer http.ResponseWriter, _ *http.Request) {
+func (t TicketServer) GetAllTickets(ctx context.Context, in *pb.TicketsRequest) (*pb.JsonTicketsResponse, error) {
 	tickets, err := t.data.ReadAllTickets()
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to get tickets"))
-		if err != nil {
-			writer.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
-			return
-		}
+		log.WithFields(log.Fields{
+			"tickets": tickets,
+		}).Warningf("got an error when tried to get tickets: %s", err)
+		return &pb.JsonTicketsResponse{Json: ""},
+			fmt.Errorf("got an error when tried to get tickets: %w", err)
 	}
-	err = json.NewEncoder(writer).Encode(tickets)
+	json, err := json.Marshal(tickets)
 	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
+		log.WithFields(log.Fields{
+			"tickets": tickets,
+		}).Warningf("got an error when tried to get json tickets: %s", err)
+		return &pb.JsonTicketsResponse{Json: ""},
+			fmt.Errorf("got an error when tried to get json tickets: %w", err)
 	}
+	return &pb.JsonTicketsResponse{Json: string(json)}, nil
 }

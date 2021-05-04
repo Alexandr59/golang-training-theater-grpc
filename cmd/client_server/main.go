@@ -18,10 +18,6 @@ func main() {
 	defer conn.Close()
 
 	grpcMux := runtime.NewServeMux()
-	//err = pb.RegisterAccountServiceHandler(context.Background(), grpcMux, conn)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
 	api.RegisterAllServiceHandler(context.Background(), grpcMux, conn)
 	log.Fatal(http.ListenAndServe("localhost:8080", grpcMux))
 }

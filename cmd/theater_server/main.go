@@ -53,7 +53,6 @@ func main() {
 		log.Fatal(err)
 	}
 	server := grpc.NewServer()
-	//pb.RegisterAccountServiceServer(server, api.NewAccountServer(*data.NewAccountData(conn)))
 	api.RegisterAllServiceServer(server, conn)
 	if err = server.Serve(listener); err != nil {
 		log.Fatal(err)

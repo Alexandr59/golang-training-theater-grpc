@@ -1,116 +1,93 @@
 package api
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
-	"strconv"
+	"context"
+	"fmt"
+	log "github.com/sirupsen/logrus"
 
 	//"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
 	"golang-training-theater-grpc/pkg/data"
+	pb "golang-training-theater-grpc/proto/go_proto"
 )
 
-type sectorAPI struct {
+type SectorServer struct {
 	data *data.SectorData
 }
 
-func (s sectorAPI) createSector(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Sector)
-	err := json.NewDecoder(request.Body).Decode(&entity)
-	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	id, err := s.data.AddSector(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to create sector"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-	err = json.NewEncoder(writer).Encode(id)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	writer.WriteHeader(http.StatusCreated)
+func NewSectorServer(a data.SectorData) *SectorServer {
+	return &SectorServer{data: &a}
 }
 
-func (s sectorAPI) deleteSectorById(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Sector)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+func (s SectorServer) CreateSector(ctx context.Context, in *pb.SectorRequest) (*pb.IdSectorResponse, error) {
+	entity := data.Sector{
+		Name: in.GetName(),
 	}
+	id, err := s.data.AddSector(entity)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"sector": entity,
+		}).Warningf("got an error when tried to create sector: %s", err)
+		return &pb.IdSectorResponse{Id: -1}, fmt.Errorf("got an error when tried to create sector: %w", err)
+	}
+	entity.Id = id
+	log.WithFields(log.Fields{
+		"sector": entity,
+	}).Info("create sector")
+	return &pb.IdSectorResponse{Id: int64(id)}, nil
+}
+
+func (s SectorServer) DeleteSector(ctx context.Context, in *pb.IdSectorRequest) (*pb.StatusSectorResponse, error) {
+	entity := new(data.Sector)
+	entity.Id = int(in.Id)
 	err := s.data.DeleteSector(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to delete sector"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to delete sector: %s", err)
+		return &pb.StatusSectorResponse{Message: "got an error when tried to delete sector"},
+			fmt.Errorf("got an error when tried to delete sector: %w", err)
 	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("sector deletion was successful")
+	return &pb.StatusSectorResponse{Message: "sector deletion was successful"}, nil
 }
 
-func (s sectorAPI) updateSector(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Sector)
-	err := json.NewDecoder(request.Body).Decode(&entity)
+func (s SectorServer) UpdateSector(ctx context.Context, in *pb.SectorRequest) (*pb.StatusSectorResponse, error) {
+	entity := data.Sector{
+		Id:   int(in.GetId()),
+		Name: in.GetName(),
+	}
+	err := s.data.UpdateSector(entity)
 	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+		log.WithFields(log.Fields{
+			"sector": entity,
+		}).Warningf("got an error when tried to update sector: %s", err)
+		return &pb.StatusSectorResponse{Message: "got an error when tried to update sector"},
+			fmt.Errorf("got an error when tried to update sector: %w", err)
 	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err = s.data.UpdateSector(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to update sector"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
+	log.WithFields(log.Fields{
+		"sector": entity,
+	}).Info("sector update was successful")
+	return &pb.StatusSectorResponse{Message: "sector update was successful"}, nil
 }
 
-func (s sectorAPI) getSectorById(writer http.ResponseWriter, request *http.Request) {
+func (s SectorServer) GetSector(ctx context.Context, in *pb.IdSectorRequest) (*pb.SectorResponse, error) {
 	entity := new(data.Sector)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	entity.Id = int(in.Id)
 	entry, err := s.data.FindByIdSector(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to get sector"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to get sector: %s", err)
+		return &pb.SectorResponse{},
+			fmt.Errorf("got an error when tried to get sector: %w", err)
 	}
-	err = json.NewEncoder(writer).Encode(entry)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("sector was successfully received")
+	return &pb.SectorResponse{
+		Id:   int64(entry.Id),
+		Name: entry.Name,
+	}, nil
 }

@@ -1,116 +1,102 @@
 package api
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
-	"strconv"
+	"context"
+	"fmt"
+	log "github.com/sirupsen/logrus"
 
 	//"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
 	"golang-training-theater-grpc/pkg/data"
+	pb "golang-training-theater-grpc/proto/go_proto"
 )
 
-type priceAPI struct {
+type PriceServer struct {
 	data *data.PriceData
 }
 
-func (p priceAPI) createPrice(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Price)
-	err := json.NewDecoder(request.Body).Decode(&entity)
-	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	id, err := p.data.AddPrice(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to create price"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-	err = json.NewEncoder(writer).Encode(id)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	writer.WriteHeader(http.StatusCreated)
+func NewPriceServer(a data.PriceData) *PriceServer {
+	return &PriceServer{data: &a}
 }
 
-func (p priceAPI) deletePriceById(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Price)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+func (p PriceServer) CreatePrice(ctx context.Context, in *pb.PriceRequest) (*pb.IdPriceResponse, error) {
+	entity := data.Price{
+		AccountId:     int(in.GetAccountId()),
+		SectorId:      int(in.GetSectorId()),
+		PerformanceId: int(in.GetPerformanceId()),
+		Price:         int(in.GetPrice()),
 	}
+	id, err := p.data.AddPrice(entity)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"price": entity,
+		}).Warningf("got an error when tried to create price: %s", err)
+		return &pb.IdPriceResponse{Id: -1}, fmt.Errorf("got an error when tried to create price: %w", err)
+	}
+	entity.Id = id
+	log.WithFields(log.Fields{
+		"price": entity,
+	}).Info("create price")
+	return &pb.IdPriceResponse{Id: int64(id)}, nil
+}
+
+func (p PriceServer) DeletePrice(ctx context.Context, in *pb.IdPriceRequest) (*pb.StatusPriceResponse, error) {
+	entity := new(data.Price)
+	entity.Id = int(in.Id)
 	err := p.data.DeletePrice(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to delete price"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to delete price: %s", err)
+		return &pb.StatusPriceResponse{Message: "got an error when tried to delete price"},
+			fmt.Errorf("got an error when tried to delete price: %w", err)
 	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("price deletion was successful")
+	return &pb.StatusPriceResponse{Message: "price deletion was successful"}, nil
 }
 
-func (p priceAPI) updatePrice(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Price)
-	err := json.NewDecoder(request.Body).Decode(&entity)
+func (p PriceServer) UpdatePrice(ctx context.Context, in *pb.PriceRequest) (*pb.StatusPriceResponse, error) {
+	entity := data.Price{
+		Id:            int(in.GetId()),
+		AccountId:     int(in.GetAccountId()),
+		SectorId:      int(in.GetSectorId()),
+		PerformanceId: int(in.GetPerformanceId()),
+		Price:         int(in.GetPrice()),
+	}
+	err := p.data.UpdatePrice(entity)
 	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+		log.WithFields(log.Fields{
+			"price": entity,
+		}).Warningf("got an error when tried to update price: %s", err)
+		return &pb.StatusPriceResponse{Message: "got an error when tried to update price"},
+			fmt.Errorf("got an error when tried to update price: %w", err)
 	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err = p.data.UpdatePrice(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to update price"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
+	log.WithFields(log.Fields{
+		"price": entity,
+	}).Info("price update was successful")
+	return &pb.StatusPriceResponse{Message: "price update was successful"}, nil
 }
 
-func (p priceAPI) getPriceById(writer http.ResponseWriter, request *http.Request) {
+func (p PriceServer) GetPrice(ctx context.Context, in *pb.IdPriceRequest) (*pb.PriceResponse, error) {
 	entity := new(data.Price)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	entity.Id = int(in.Id)
 	entry, err := p.data.FindByIdPrice(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to get price"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to get price: %s", err)
+		return &pb.PriceResponse{},
+			fmt.Errorf("got an error when tried to get price: %w", err)
 	}
-	err = json.NewEncoder(writer).Encode(entry)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("price was successfully received")
+	return &pb.PriceResponse{
+		Id:            int64(entry.Id),
+		AccountId:     int64(entry.AccountId),
+		SectorId:      int64(entry.SectorId),
+		PerformanceId: int64(entry.PerformanceId),
+		Price:         int64(entry.Price),
+	}, nil
 }

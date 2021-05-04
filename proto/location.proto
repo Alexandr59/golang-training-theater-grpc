@@ -1,0 +1,61 @@
+// protoc -I . location.proto --go_out=plugins=grpc:.
+// protoc -I . location.proto --grpc-gateway_out . --go_out=plugins=grpc:.
+
+syntax = "proto3";
+
+option go_package = "/go_proto";
+
+import "google/api/annotations.proto";
+
+package location;
+
+service LocationService {
+  rpc CreateLocation(LocationRequest) returns (IdLocationResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/location"
+      body: "*"
+    };
+  }
+  rpc DeleteLocation(IdLocationRequest) returns (StatusLocationResponse) {
+    option(google.api.http) = {
+      delete: "/api/v1/location/{id}"
+    };
+  }
+  rpc UpdateLocation(LocationRequest) returns (StatusLocationResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/location"
+      body: "*"
+    };
+  }
+  rpc GetLocation(IdLocationRequest) returns (LocationResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/location/{id}"
+    };
+  }
+}
+
+message LocationRequest {
+  int64 Id = 1;
+  int64 AccountId = 2;
+  string Address = 3;
+  string PhoneNumber = 4;
+}
+
+message LocationResponse {
+  int64 Id = 1;
+  int64 AccountId = 2;
+  string Address = 3;
+  string PhoneNumber = 4;
+}
+
+message IdLocationRequest {
+  int64 id = 1;
+}
+
+message IdLocationResponse {
+  int64 id = 1;
+}
+
+message StatusLocationResponse{
+  string message = 1;
+}

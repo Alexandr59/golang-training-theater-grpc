@@ -1,0 +1,63 @@
+// protoc -I . hall.proto --go_out=plugins=grpc:.
+// protoc -I . hall.proto --grpc-gateway_out . --go_out=plugins=grpc:.
+
+syntax = "proto3";
+
+option go_package = "/go_proto";
+
+import "google/api/annotations.proto";
+
+package hall;
+
+service HallService {
+  rpc CreateHall(HallRequest) returns (IdHallResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/hall"
+      body: "*"
+    };
+  }
+  rpc DeleteHall(IdHallRequest) returns (StatusHallResponse) {
+    option(google.api.http) = {
+      delete: "/api/v1/hall/{id}"
+    };
+  }
+  rpc UpdateHall(HallRequest) returns (StatusHallResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/hall"
+      body: "*"
+    };
+  }
+  rpc GetHall(IdHallRequest) returns (HallResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/hall/{id}"
+    };
+  }
+}
+
+message HallRequest {
+  int64 Id = 1;
+  int64 AccountId = 2;
+  string Name = 3;
+  int64 Capacity = 4;
+  int64 LocationId = 5;
+}
+
+message HallResponse {
+  int64 Id = 1;
+  int64 AccountId = 2;
+  string Name = 3;
+  int64 Capacity = 4;
+  int64 LocationId = 5;
+}
+
+message IdHallRequest {
+  int64 id = 1;
+}
+
+message IdHallResponse {
+  int64 id = 1;
+}
+
+message StatusHallResponse{
+  string message = 1;
+}

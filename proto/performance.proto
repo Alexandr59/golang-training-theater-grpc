@@ -1,0 +1,63 @@
+// protoc -I . performance.proto --go_out=plugins=grpc:.
+// protoc -I . performance.proto --grpc-gateway_out . --go_out=plugins=grpc:.
+
+syntax = "proto3";
+
+option go_package = "/go_proto";
+
+import "google/api/annotations.proto";
+
+package performance;
+
+service PerformanceService {
+  rpc CreatePerformance(PerformanceRequest) returns (IdPerformanceResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/performance"
+      body: "*"
+    };
+  }
+  rpc DeletePerformance(IdPerformanceRequest) returns (StatusPerformanceResponse) {
+    option(google.api.http) = {
+      delete: "/api/v1/performance/{id}"
+    };
+  }
+  rpc UpdatePerformance(PerformanceRequest) returns (StatusPerformanceResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/performance"
+      body: "*"
+    };
+  }
+  rpc GetPerformance(IdPerformanceRequest) returns (PerformanceResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/performance/{id}"
+    };
+  }
+}
+
+message PerformanceRequest {
+  int64 Id = 1;
+  int64 AccountId = 2;
+  string Name = 3;
+  int64 GenreId = 4;
+  string Duration = 5;
+}
+
+message PerformanceResponse {
+  int64 Id = 1;
+  int64 AccountId = 2;
+  string Name = 3;
+  int64 GenreId = 4;
+  string Duration = 5;
+}
+
+message IdPerformanceRequest {
+  int64 id = 1;
+}
+
+message IdPerformanceResponse {
+  int64 id = 1;
+}
+
+message StatusPerformanceResponse{
+  string message = 1;
+}
