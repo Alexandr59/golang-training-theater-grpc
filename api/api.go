@@ -1,12 +1,43 @@
 package api
 
+import (
+	"context"
+	"log"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/jinzhu/gorm"
+	"google.golang.org/grpc"
+
+	pb "golang-training-theater-grpc/proto/go_proto"
+	//"golang-training-theater-grpc/api"
+	"golang-training-theater-grpc/pkg/data"
+)
+
+func RegisterAllServiceServer(server *grpc.Server, conn *gorm.DB) {
+	pb.RegisterAccountServiceServer(server, NewAccountServer(*data.NewAccountData(conn)))
+	pb.RegisterGenreServiceServer(server, NewGenreServer(*data.NewGenreData(conn)))
+
+}
+
+func RegisterAllServiceHandler(background context.Context, grpcMux *runtime.ServeMux, conn *grpc.ClientConn) {
+	err := pb.RegisterAccountServiceHandler(background, grpcMux, conn)
+	fatal(err)
+	err = pb.RegisterGenreServiceHandler(background, grpcMux, conn)
+	fatal(err)
+}
+
+func fatal(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 //
 //import (
 //	"github.com/gorilla/mux"
 //	"github.com/jinzhu/gorm"
 //
-//	//"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
-//	"golang-training-theater-grpc/pkg/data"
+//	"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
 //)
 //
 //func ServerTheaterResource(r *mux.Router, conn *gorm.DB) {

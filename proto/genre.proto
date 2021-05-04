@@ -1,0 +1,57 @@
+// protoc -I . genre.proto --go_out=plugins=grpc:.
+// protoc -I . genre.proto --grpc-gateway_out . --go_out=plugins=grpc:.
+
+syntax = "proto3";
+
+option go_package = "/go_proto";
+
+import "google/api/annotations.proto";
+
+package genre;
+
+service GenreService {
+  rpc CreateGenre(GenreRequest) returns (IdGenreResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/genre"
+      body: "*"
+    };
+  }
+  rpc DeleteGenre(IdGenreRequest) returns (StatusGenreResponse) {
+    option(google.api.http) = {
+      delete: "/api/v1/genre/{id}"
+    };
+  }
+  rpc UpdateGenre(GenreRequest) returns (StatusGenreResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/genre"
+      body: "*"
+    };
+  }
+  rpc GetGenre(IdGenreRequest) returns (GenreResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/genre/{id}"
+    };
+  }
+}
+
+message GenreRequest {
+  int64 Id = 1;
+  string Name = 2;
+}
+
+message GenreResponse {
+  int64 Id = 1;
+  string Name = 2;
+}
+
+message IdGenreRequest {
+  int64 id = 1;
+}
+
+message IdGenreResponse {
+  int64 id = 1;
+}
+
+message StatusGenreResponse{
+  string message = 1;
+}

@@ -1,17 +1,16 @@
 package main
 
 import (
-	"google.golang.org/grpc"
 	"log"
 	"net"
 	"os"
 
-	//"github.com/Alexandr59/golang-training-theater-grpc/api"
+	"google.golang.org/grpc"
+
 	//"github.com/Alexandr59/golang-training-theater-grpc/pkg/db"
-	"golang-training-theater-grpc/api"
-	"golang-training-theater-grpc/pkg/data"
 	"golang-training-theater-grpc/pkg/db"
-	pb "golang-training-theater-grpc/proto/go_proto"
+	//"github.com/Alexandr59/golang-training-theater-grpc/api"
+	"golang-training-theater-grpc/api"
 )
 
 var (
@@ -49,12 +48,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("can't connect to database, error: %v", err)
 	}
-	listener, err := net.Listen("tcp", ":8080")
+	listener, err := net.Listen("tcp", ":8181")
 	if err != nil {
 		log.Fatal(err)
 	}
 	server := grpc.NewServer()
-	pb.RegisterAccountServiceServer(server, api.NewAccountServer(*data.NewAccountData(conn)))
+	//pb.RegisterAccountServiceServer(server, api.NewAccountServer(*data.NewAccountData(conn)))
+	api.RegisterAllServiceServer(server, conn)
 	if err = server.Serve(listener); err != nil {
 		log.Fatal(err)
 	}

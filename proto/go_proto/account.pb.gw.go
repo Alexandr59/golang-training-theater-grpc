@@ -66,7 +66,7 @@ func local_request_AccountService_CreateAccount_0(ctx context.Context, marshaler
 }
 
 func request_AccountService_DeleteAccount_0(ctx context.Context, marshaler runtime.Marshaler, client AccountServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq IdRequest
+	var protoReq IdAccountRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -92,7 +92,7 @@ func request_AccountService_DeleteAccount_0(ctx context.Context, marshaler runti
 }
 
 func local_request_AccountService_DeleteAccount_0(ctx context.Context, marshaler runtime.Marshaler, server AccountServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq IdRequest
+	var protoReq IdAccountRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -152,7 +152,7 @@ func local_request_AccountService_UpdateAccount_0(ctx context.Context, marshaler
 }
 
 func request_AccountService_GetAccount_0(ctx context.Context, marshaler runtime.Marshaler, client AccountServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq IdRequest
+	var protoReq IdAccountRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -178,7 +178,7 @@ func request_AccountService_GetAccount_0(ctx context.Context, marshaler runtime.
 }
 
 func local_request_AccountService_GetAccount_0(ctx context.Context, marshaler runtime.Marshaler, server AccountServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq IdRequest
+	var protoReq IdAccountRequest
 	var metadata runtime.ServerMetadata
 
 	var (
