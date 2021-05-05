@@ -8,8 +8,8 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/Alexandr59/golang-training-Theater/api"
-	"github.com/Alexandr59/golang-training-Theater/pkg/db"
+	"github.com/Alexandr59/golang-training-theater-grpc/api"
+	"github.com/Alexandr59/golang-training-theater-grpc/pkg/db"
 )
 
 var (
