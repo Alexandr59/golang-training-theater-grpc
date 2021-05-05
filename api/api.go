@@ -9,7 +9,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
-	pb "github.com/Alexandr59/golang-training-theater-grpc/proto/go_proto"
+	//pb "github.com/Alexandr59/golang-training-theater-grpc/proto/go_proto"
+	pb "golang-training-theater-grpc/proto/go_proto"
 )
 
 func RegisterAllServiceServer(server *grpc.Server, conn *gorm.DB) {
