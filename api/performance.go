@@ -1,115 +1,102 @@
 package api
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
-	"strconv"
+	"context"
+	"fmt"
+	log "github.com/sirupsen/logrus"
 
-	"github.com/Alexandr59/golang-training-Theater/pkg/data"
+	//"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
+	"golang-training-theater-grpc/pkg/data"
+	pb "golang-training-theater-grpc/proto/go_proto"
 )
 
-type performanceAPI struct {
+type PerformanceServer struct {
 	data *data.PerformanceData
 }
 
-func (p performanceAPI) createPerformance(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Performance)
-	err := json.NewDecoder(request.Body).Decode(&entity)
-	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	id, err := p.data.AddPerformance(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to create performance"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-	err = json.NewEncoder(writer).Encode(id)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	writer.WriteHeader(http.StatusCreated)
+func NewPerformanceServer(a data.PerformanceData) *PerformanceServer {
+	return &PerformanceServer{data: &a}
 }
 
-func (p performanceAPI) deletePerformanceById(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Performance)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+func (p PerformanceServer) CreatePerformance(ctx context.Context, in *pb.PerformanceRequest) (*pb.IdPerformanceResponse, error) {
+	entity := data.Performance{
+		AccountId: int(in.GetAccountId()),
+		Name:      in.GetName(),
+		GenreId:   int(in.GetGenreId()),
+		Duration:  in.GetDuration(),
 	}
+	id, err := p.data.AddPerformance(entity)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"performance": entity,
+		}).Warningf("got an error when tried to create performance: %s", err)
+		return &pb.IdPerformanceResponse{Id: -1}, fmt.Errorf("got an error when tried to create performance: %w", err)
+	}
+	entity.Id = id
+	log.WithFields(log.Fields{
+		"performance": entity,
+	}).Info("create performance")
+	return &pb.IdPerformanceResponse{Id: int64(id)}, nil
+}
+
+func (p PerformanceServer) DeletePerformance(ctx context.Context, in *pb.IdPerformanceRequest) (*pb.StatusPerformanceResponse, error) {
+	entity := new(data.Performance)
+	entity.Id = int(in.Id)
 	err := p.data.DeletePerformance(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to delete performance"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to delete performance: %s", err)
+		return &pb.StatusPerformanceResponse{Message: "got an error when tried to delete performance"},
+			fmt.Errorf("got an error when tried to delete performance: %w", err)
 	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("performance deletion was successful")
+	return &pb.StatusPerformanceResponse{Message: "performance deletion was successful"}, nil
 }
 
-func (p performanceAPI) updatePerformance(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Performance)
-	err := json.NewDecoder(request.Body).Decode(&entity)
+func (p PerformanceServer) UpdatePerformance(ctx context.Context, in *pb.PerformanceRequest) (*pb.StatusPerformanceResponse, error) {
+	entity := data.Performance{
+		Id:        int(in.GetId()),
+		AccountId: int(in.GetAccountId()),
+		Name:      in.GetName(),
+		GenreId:   int(in.GetGenreId()),
+		Duration:  in.GetDuration(),
+	}
+	err := p.data.UpdatePerformance(entity)
 	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+		log.WithFields(log.Fields{
+			"performance": entity,
+		}).Warningf("got an error when tried to update performance: %s", err)
+		return &pb.StatusPerformanceResponse{Message: "got an error when tried to update performance"},
+			fmt.Errorf("got an error when tried to update performance: %w", err)
 	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err = p.data.UpdatePerformance(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to update performance"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
+	log.WithFields(log.Fields{
+		"performance": entity,
+	}).Info("performance update was successful")
+	return &pb.StatusPerformanceResponse{Message: "performance update was successful"}, nil
 }
 
-func (p performanceAPI) getPerformanceById(writer http.ResponseWriter, request *http.Request) {
+func (p PerformanceServer) GetPerformance(ctx context.Context, in *pb.IdPerformanceRequest) (*pb.PerformanceResponse, error) {
 	entity := new(data.Performance)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	entity.Id = int(in.Id)
 	entry, err := p.data.FindByIdPerformance(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to get performance"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to get performance: %s", err)
+		return &pb.PerformanceResponse{},
+			fmt.Errorf("got an error when tried to get performance: %w", err)
 	}
-	err = json.NewEncoder(writer).Encode(entry)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("performance was successfully received")
+	return &pb.PerformanceResponse{
+		Id:        int64(entry.Id),
+		AccountId: int64(entry.AccountId),
+		Name:      entry.Name,
+		GenreId:   int64(entry.GenreId),
+		Duration:  entry.Duration,
+	}, nil
 }

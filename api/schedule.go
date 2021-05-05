@@ -1,115 +1,101 @@
 package api
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
-	"strconv"
+	"context"
+	"fmt"
+	log "github.com/sirupsen/logrus"
 
-	"github.com/Alexandr59/golang-training-Theater/pkg/data"
+	//"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
+	"golang-training-theater-grpc/pkg/data"
+	pb "golang-training-theater-grpc/proto/go_proto"
 )
 
-type scheduleAPI struct {
+type ScheduleServer struct {
 	data *data.ScheduleData
 }
 
-func (s scheduleAPI) createSchedule(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Schedule)
-	err := json.NewDecoder(request.Body).Decode(&entity)
-	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	id, err := s.data.AddSchedule(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to create schedule"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-	err = json.NewEncoder(writer).Encode(id)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	writer.WriteHeader(http.StatusCreated)
+func NewScheduleServer(a data.ScheduleData) *ScheduleServer {
+	return &ScheduleServer{data: &a}
 }
 
-func (s scheduleAPI) deleteScheduleById(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Schedule)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+func (s ScheduleServer) CreateSchedule(ctx context.Context, in *pb.ScheduleRequest) (*pb.IdScheduleResponse, error) {
+	entity := data.Schedule{
+		AccountId:     int(in.GetAccountId()),
+		PerformanceId: int(in.GetPerformanceId()),
+		Date:          in.GetDate(),
+		HallId:        int(in.GetHallId()),
 	}
+	id, err := s.data.AddSchedule(entity)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"schedule": entity,
+		}).Warningf("got an error when tried to create schedule: %s", err)
+		return &pb.IdScheduleResponse{Id: -1}, fmt.Errorf("got an error when tried to create schedule: %w", err)
+	}
+	entity.Id = id
+	log.WithFields(log.Fields{
+		"schedule": entity,
+	}).Info("create schedule")
+	return &pb.IdScheduleResponse{Id: int64(id)}, nil
+}
+
+func (s ScheduleServer) DeleteSchedule(ctx context.Context, in *pb.IdScheduleRequest) (*pb.StatusScheduleResponse, error) {
+	entity := new(data.Schedule)
+	entity.Id = int(in.Id)
 	err := s.data.DeleteSchedule(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to delete schedule"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to delete schedule: %s", err)
+		return &pb.StatusScheduleResponse{Message: "got an error when tried to delete schedule"},
+			fmt.Errorf("got an error when tried to delete schedule: %w", err)
 	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("schedule deletion was successful")
+	return &pb.StatusScheduleResponse{Message: "schedule deletion was successful"}, nil
 }
 
-func (s scheduleAPI) updateSchedule(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Schedule)
-	err := json.NewDecoder(request.Body).Decode(&entity)
+func (s ScheduleServer) UpdateSchedule(ctx context.Context, in *pb.ScheduleRequest) (*pb.StatusScheduleResponse, error) {
+	entity := data.Schedule{
+		Id:            int(in.GetId()),
+		AccountId:     int(in.GetAccountId()),
+		PerformanceId: int(in.GetPerformanceId()),
+		Date:          in.GetDate(),
+		HallId:        int(in.GetHallId()),
+	}
+	err := s.data.UpdateSchedule(entity)
 	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+		log.WithFields(log.Fields{
+			"schedule": entity,
+		}).Warningf("got an error when tried to update schedule: %s", err)
+		return &pb.StatusScheduleResponse{Message: "got an error when tried to update schedule"},
+			fmt.Errorf("got an error when tried to update schedule: %w", err)
 	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err = s.data.UpdateSchedule(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to update schedule"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
+	log.WithFields(log.Fields{
+		"schedule": entity,
+	}).Info("schedule update was successful")
+	return &pb.StatusScheduleResponse{Message: "schedule update was successful"}, nil
 }
-
-func (s scheduleAPI) getScheduleById(writer http.ResponseWriter, request *http.Request) {
+func (s ScheduleServer) GetSchedule(ctx context.Context, in *pb.IdScheduleRequest) (*pb.ScheduleResponse, error) {
 	entity := new(data.Schedule)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	entity.Id = int(in.Id)
 	entry, err := s.data.FindByIdSchedule(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to get schedule"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to get schedule: %s", err)
+		return &pb.ScheduleResponse{},
+			fmt.Errorf("got an error when tried to get schedule: %w", err)
 	}
-	err = json.NewEncoder(writer).Encode(entry)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("schedule was successfully received")
+	return &pb.ScheduleResponse{
+		Id:            int64(entry.Id),
+		AccountId:     int64(entry.AccountId),
+		PerformanceId: int64(entry.PerformanceId),
+		Date:          entry.Date,
+		HallId:        int64(entry.HallId),
+	}, nil
 }

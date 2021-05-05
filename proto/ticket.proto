@@ -1,0 +1,80 @@
+// protoc -I . ticket.proto --go_out=plugins=grpc:.
+// protoc -I . ticket.proto --grpc-gateway_out . --go_out=plugins=grpc:.
+
+syntax = "proto3";
+
+option go_package = "/go_proto";
+
+import "google/api/annotations.proto";
+
+package ticket;
+
+service TicketService {
+  rpc CreateTicket(TicketRequest) returns (IdTicketResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/ticket"
+      body: "*"
+    };
+  }
+  rpc DeleteTicket(IdTicketRequest) returns (StatusTicketResponse) {
+    option(google.api.http) = {
+      delete: "/api/v1/ticket/{id}"
+    };
+  }
+  rpc UpdateTicket(TicketRequest) returns (StatusTicketResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/ticket"
+      body: "*"
+    };
+  }
+  rpc GetTicket(IdTicketRequest) returns (TicketResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/ticket/{id}"
+    };
+  }
+  rpc GetAllTickets(TicketsRequest) returns (JsonTicketsResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/tickets"
+    };
+  }
+}
+
+message TicketRequest {
+  int64 Id = 1;
+  int64 AccountId = 2;
+  int64 ScheduleId = 3;
+  int64 PlaceId = 4;
+  string DateOfIssue = 5;
+  bool Paid = 6;
+  bool Reservation = 7;
+  bool Destroyed = 8;
+}
+
+message TicketResponse {
+  int64 Id = 1;
+  int64 AccountId = 2;
+  int64 ScheduleId = 3;
+  int64 PlaceId = 4;
+  string DateOfIssue = 5;
+  bool Paid = 6;
+  bool Reservation = 7;
+  bool Destroyed = 8;
+}
+
+message IdTicketRequest {
+  int64 id = 1;
+}
+
+message IdTicketResponse {
+  int64 id = 1;
+}
+
+message StatusTicketResponse{
+  string message = 1;
+}
+
+message JsonTicketsResponse{
+  string json = 1;
+}
+
+message TicketsRequest{}

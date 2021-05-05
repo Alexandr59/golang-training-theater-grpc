@@ -1,115 +1,104 @@
 package api
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
-	"strconv"
+	"context"
+	"fmt"
 
-	"github.com/Alexandr59/golang-training-Theater/pkg/data"
+	log "github.com/sirupsen/logrus"
+
+	//"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
+	"golang-training-theater-grpc/pkg/data"
+	//pb "github.com/Alexandr59/golang-training-theater-grpc/proto/go_proto"
+	pb "golang-training-theater-grpc/proto/go_proto"
 )
 
-type accountAPI struct {
+type AccountServer struct {
 	data *data.AccountData
 }
 
-func (a accountAPI) createAccount(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Account)
-	err := json.NewDecoder(request.Body).Decode(&entity)
-	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	id, err := a.data.AddAccount(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to create account"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-	err = json.NewEncoder(writer).Encode(id)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	writer.WriteHeader(http.StatusCreated)
+func NewAccountServer(a data.AccountData) *AccountServer {
+	return &AccountServer{data: &a}
 }
 
-func (a accountAPI) deleteAccountById(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Account)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+func (a AccountServer) CreateAccount(ctx context.Context, in *pb.AccountRequest) (*pb.IdAccountResponse, error) {
+	entity := data.Account{
+		FirstName:   in.GetFirstName(),
+		LastName:    in.GetLastName(),
+		PhoneNumber: in.GetPhoneNumber(),
+		Email:       in.GetEmail(),
 	}
+	id, err := a.data.AddAccount(entity)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"account": entity,
+		}).Warningf("got an error when tried to create account: %s", err)
+		return &pb.IdAccountResponse{Id: -1}, fmt.Errorf("got an error when tried to create account: %w", err)
+	}
+	entity.Id = id
+	log.WithFields(log.Fields{
+		"account": entity,
+	}).Info("create account")
+	return &pb.IdAccountResponse{Id: int64(id)}, nil
+}
+
+func (a AccountServer) DeleteAccount(ctx context.Context, in *pb.IdAccountRequest) (*pb.StatusAccountResponse, error) {
+	entity := new(data.Account)
+	entity.Id = int(in.Id)
 	err := a.data.DeleteAccount(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to delete account"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to delete account: %s", err)
+		return &pb.StatusAccountResponse{Message: "got an error when tried to delete account"},
+			fmt.Errorf("got an error when tried to delete account: %w", err)
 	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("account deletion was successful")
+	return &pb.StatusAccountResponse{Message: "account deletion was successful"}, nil
 }
 
-func (a accountAPI) updateAccount(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Account)
-	err := json.NewDecoder(request.Body).Decode(&entity)
+func (a AccountServer) UpdateAccount(ctx context.Context, in *pb.AccountRequest) (*pb.StatusAccountResponse, error) {
+	entity := data.Account{
+		Id:          int(in.GetId()),
+		FirstName:   in.GetFirstName(),
+		LastName:    in.GetLastName(),
+		PhoneNumber: in.GetPhoneNumber(),
+		Email:       in.GetEmail(),
+	}
+	err := a.data.UpdateAccount(entity)
 	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+		log.WithFields(log.Fields{
+			"account": entity,
+		}).Warningf("got an error when tried to update account: %s", err)
+		return &pb.StatusAccountResponse{Message: "got an error when tried to update account"},
+			fmt.Errorf("got an error when tried to update account: %w", err)
 	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err = a.data.UpdateAccount(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to update account"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
+	log.WithFields(log.Fields{
+		"account": entity,
+	}).Info("account update was successful")
+	return &pb.StatusAccountResponse{Message: "account update was successful"}, nil
 }
 
-func (a accountAPI) getAccountById(writer http.ResponseWriter, request *http.Request) {
+func (a AccountServer) GetAccount(ctx context.Context, in *pb.IdAccountRequest) (*pb.AccountResponse, error) {
 	entity := new(data.Account)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	entity.Id = int(in.Id)
 	entry, err := a.data.FindByIdAccount(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to get account"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to get account: %s", err)
+		return &pb.AccountResponse{},
+			fmt.Errorf("got an error when tried to get account: %w", err)
 	}
-	err = json.NewEncoder(writer).Encode(entry)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("account was successfully received")
+	return &pb.AccountResponse{
+		Id:          int64(entry.Id),
+		FirstName:   entry.FirstName,
+		LastName:    entry.LastName,
+		PhoneNumber: entry.PhoneNumber,
+		Email:       entry.Email,
+	}, nil
 }

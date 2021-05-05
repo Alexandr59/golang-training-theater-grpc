@@ -1,115 +1,102 @@
 package api
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
-	"strconv"
+	"context"
+	"fmt"
+	log "github.com/sirupsen/logrus"
 
-	"github.com/Alexandr59/golang-training-Theater/pkg/data"
+	pb "golang-training-theater-grpc/proto/go_proto"
+	//"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
+	"golang-training-theater-grpc/pkg/data"
 )
 
-type hallAPI struct {
+type HallServer struct {
 	data *data.HallData
 }
 
-func (h hallAPI) createHall(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Hall)
-	err := json.NewDecoder(request.Body).Decode(&entity)
-	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	id, err := h.data.AddHall(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to create hall"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-	err = json.NewEncoder(writer).Encode(id)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	writer.WriteHeader(http.StatusCreated)
+func NewHallServer(a data.HallData) *HallServer {
+	return &HallServer{data: &a}
 }
 
-func (h hallAPI) deleteHallById(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Hall)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+func (h HallServer) CreateHall(ctx context.Context, in *pb.HallRequest) (*pb.IdHallResponse, error) {
+	entity := data.Hall{
+		AccountId:  int(in.GetAccountId()),
+		Name:       in.GetName(),
+		Capacity:   int(in.GetCapacity()),
+		LocationId: int(in.GetLocationId()),
 	}
+	id, err := h.data.AddHall(entity)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"hall": entity,
+		}).Warningf("got an error when tried to create hall: %s", err)
+		return &pb.IdHallResponse{Id: -1}, fmt.Errorf("got an error when tried to create hall: %w", err)
+	}
+	entity.Id = id
+	log.WithFields(log.Fields{
+		"hall": entity,
+	}).Info("create hall")
+	return &pb.IdHallResponse{Id: int64(id)}, nil
+}
+
+func (h HallServer) DeleteHall(ctx context.Context, in *pb.IdHallRequest) (*pb.StatusHallResponse, error) {
+	entity := new(data.Hall)
+	entity.Id = int(in.Id)
 	err := h.data.DeleteHall(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to delete hall"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to delete hall: %s", err)
+		return &pb.StatusHallResponse{Message: "got an error when tried to delete hall"},
+			fmt.Errorf("got an error when tried to delete hall: %w", err)
 	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("hall deletion was successful")
+	return &pb.StatusHallResponse{Message: "hall deletion was successful"}, nil
 }
 
-func (h hallAPI) updateHall(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Hall)
-	err := json.NewDecoder(request.Body).Decode(&entity)
+func (h HallServer) UpdateHall(ctx context.Context, in *pb.HallRequest) (*pb.StatusHallResponse, error) {
+	entity := data.Hall{
+		Id:         int(in.GetId()),
+		AccountId:  int(in.GetAccountId()),
+		Name:       in.GetName(),
+		Capacity:   int(in.GetCapacity()),
+		LocationId: int(in.GetLocationId()),
+	}
+	err := h.data.UpdateHall(entity)
 	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+		log.WithFields(log.Fields{
+			"hall": entity,
+		}).Warningf("got an error when tried to update hall: %s", err)
+		return &pb.StatusHallResponse{Message: "got an error when tried to update hall"},
+			fmt.Errorf("got an error when tried to update hall: %w", err)
 	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err = h.data.UpdateHall(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to update hall"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
+	log.WithFields(log.Fields{
+		"hall": entity,
+	}).Info("hall update was successful")
+	return &pb.StatusHallResponse{Message: "hall update was successful"}, nil
 }
 
-func (h hallAPI) getHallById(writer http.ResponseWriter, request *http.Request) {
+func (h HallServer) GetHall(ctx context.Context, in *pb.IdHallRequest) (*pb.HallResponse, error) {
 	entity := new(data.Hall)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	entity.Id = int(in.Id)
 	entry, err := h.data.FindByIdHall(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to get hall"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to get hall: %s", err)
+		return &pb.HallResponse{},
+			fmt.Errorf("got an error when tried to get hall: %w", err)
 	}
-	err = json.NewEncoder(writer).Encode(entry)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("hall was successfully received")
+	return &pb.HallResponse{
+		Id:         int64(entry.Id),
+		AccountId:  int64(entry.AccountId),
+		Name:       entry.Name,
+		Capacity:   int64(entry.Capacity),
+		LocationId: int64(entry.LocationId),
+	}, nil
 }

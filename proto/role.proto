@@ -1,0 +1,57 @@
+// protoc -I . role.proto --go_out=plugins=grpc:.
+// protoc -I . role.proto --grpc-gateway_out . --go_out=plugins=grpc:.
+
+syntax = "proto3";
+
+option go_package = "/go_proto";
+
+import "google/api/annotations.proto";
+
+package role;
+
+service RoleService {
+  rpc CreateRole(RoleRequest) returns (IdRoleResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/role"
+      body: "*"
+    };
+  }
+  rpc DeleteRole(IdRoleRequest) returns (StatusRoleResponse) {
+    option(google.api.http) = {
+      delete: "/api/v1/role/{id}"
+    };
+  }
+  rpc UpdateRole(RoleRequest) returns (StatusRoleResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/role"
+      body: "*"
+    };
+  }
+  rpc GetRole(IdRoleRequest) returns (RoleResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/role/{id}"
+    };
+  }
+}
+
+message RoleRequest {
+  int64 Id = 1;
+  string Name = 2;
+}
+
+message RoleResponse {
+  int64 Id = 1;
+  string Name = 2;
+}
+
+message IdRoleRequest {
+  int64 id = 1;
+}
+
+message IdRoleResponse {
+  int64 id = 1;
+}
+
+message StatusRoleResponse{
+  string message = 1;
+}

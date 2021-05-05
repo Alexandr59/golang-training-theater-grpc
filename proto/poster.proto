@@ -1,0 +1,72 @@
+// protoc -I . poster.proto --go_out=plugins=grpc:.
+// protoc -I . poster.proto --grpc-gateway_out . --go_out=plugins=grpc:.
+
+syntax = "proto3";
+
+option go_package = "/go_proto";
+
+import "google/api/annotations.proto";
+
+package poster;
+
+service PosterService {
+  rpc CreatePoster(PosterRequest) returns (IdPosterResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/poster"
+      body: "*"
+    };
+  }
+  rpc DeletePoster(IdPosterRequest) returns (StatusPosterResponse) {
+    option(google.api.http) = {
+      delete: "/api/v1/poster/{id}"
+    };
+  }
+  rpc UpdatePoster(PosterRequest) returns (StatusPosterResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/poster"
+      body: "*"
+    };
+  }
+  rpc GetPoster(IdPosterRequest) returns (PosterResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/poster/{id}"
+    };
+  }
+  rpc GetAllPosters(Request) returns (JsonResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/posters"
+    };
+  }
+}
+
+message PosterRequest {
+  int64 Id = 1;
+  int64 AccountId = 2;
+  int64 ScheduleId = 3;
+  string Comment = 4;
+}
+
+message PosterResponse {
+  int64 Id = 1;
+  int64 AccountId = 2;
+  int64 ScheduleId = 3;
+  string Comment = 4;
+}
+
+message IdPosterRequest {
+  int64 id = 1;
+}
+
+message IdPosterResponse {
+  int64 id = 1;
+}
+
+message StatusPosterResponse{
+  string message = 1;
+}
+
+message JsonResponse{
+  string json = 1;
+}
+
+message Request{}

@@ -1,0 +1,57 @@
+// protoc -I . sector.proto --go_out=plugins=grpc:.
+// protoc -I . sector.proto --grpc-gateway_out . --go_out=plugins=grpc:.
+
+syntax = "proto3";
+
+option go_package = "/go_proto";
+
+import "google/api/annotations.proto";
+
+package sector;
+
+service SectorService {
+  rpc CreateSector(SectorRequest) returns (IdSectorResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/sector"
+      body: "*"
+    };
+  }
+  rpc DeleteSector(IdSectorRequest) returns (StatusSectorResponse) {
+    option(google.api.http) = {
+      delete: "/api/v1/sector/{id}"
+    };
+  }
+  rpc UpdateSector(SectorRequest) returns (StatusSectorResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/sector"
+      body: "*"
+    };
+  }
+  rpc GetSector(IdSectorRequest) returns (SectorResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/sector/{id}"
+    };
+  }
+}
+
+message SectorRequest {
+  int64 Id = 1;
+  string Name = 2;
+}
+
+message SectorResponse {
+  int64 Id = 1;
+  string Name = 2;
+}
+
+message IdSectorRequest {
+  int64 id = 1;
+}
+
+message IdSectorResponse {
+  int64 id = 1;
+}
+
+message StatusSectorResponse{
+  string message = 1;
+}

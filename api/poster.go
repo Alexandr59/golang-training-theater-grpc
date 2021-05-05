@@ -1,133 +1,121 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
-	"log"
-	"net/http"
-	"strconv"
+	"fmt"
 
-	"github.com/Alexandr59/golang-training-Theater/pkg/data"
+	log "github.com/sirupsen/logrus"
+
+	//"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
+	"golang-training-theater-grpc/pkg/data"
+	pb "golang-training-theater-grpc/proto/go_proto"
 )
 
-type posterAPI struct {
+type PosterServer struct {
 	data *data.PosterData
 }
 
-func (p posterAPI) createPoster(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Poster)
-	err := json.NewDecoder(request.Body).Decode(&entity)
-	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	id, err := p.data.AddPoster(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to create poster"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
-	err = json.NewEncoder(writer).Encode(id)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	writer.WriteHeader(http.StatusCreated)
+func NewPosterServer(a data.PosterData) *PosterServer {
+	return &PosterServer{data: &a}
 }
 
-func (p posterAPI) deletePosterById(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Poster)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+func (p PosterServer) CreatePoster(ctx context.Context, in *pb.PosterRequest) (*pb.IdPosterResponse, error) {
+	entity := data.Poster{
+		AccountId:  int(in.GetAccountId()),
+		ScheduleId: int(in.GetScheduleId()),
+		Comment:    in.GetComment(),
 	}
+	id, err := p.data.AddPoster(entity)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"poster": entity,
+		}).Warningf("got an error when tried to create poster: %s", err)
+		return &pb.IdPosterResponse{Id: -1}, fmt.Errorf("got an error when tried to create poster: %w", err)
+	}
+	entity.Id = id
+	log.WithFields(log.Fields{
+		"poster": entity,
+	}).Info("create poster")
+	return &pb.IdPosterResponse{Id: int64(id)}, nil
+}
+
+func (p PosterServer) DeletePoster(ctx context.Context, in *pb.IdPosterRequest) (*pb.StatusPosterResponse, error) {
+	entity := new(data.Poster)
+	entity.Id = int(in.Id)
 	err := p.data.DeletePoster(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to delete poster"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to delete poster: %s", err)
+		return &pb.StatusPosterResponse{Message: "got an error when tried to delete poster"},
+			fmt.Errorf("got an error when tried to delete poster: %w", err)
 	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("poster deletion was successful")
+	return &pb.StatusPosterResponse{Message: "poster deletion was successful"}, nil
 }
 
-func (p posterAPI) updatePoster(writer http.ResponseWriter, request *http.Request) {
-	entity := new(data.Poster)
-	err := json.NewDecoder(request.Body).Decode(&entity)
+func (p PosterServer) UpdatePoster(ctx context.Context, in *pb.PosterRequest) (*pb.StatusPosterResponse, error) {
+	entity := data.Poster{
+		Id:         int(in.GetId()),
+		AccountId:  int(in.GetAccountId()),
+		ScheduleId: int(in.GetScheduleId()),
+		Comment:    in.GetComment(),
+	}
+	err := p.data.UpdatePoster(entity)
 	if err != nil {
-		log.Printf("failed reading JSON: %s\n", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
+		log.WithFields(log.Fields{
+			"poster": entity,
+		}).Warningf("got an error when tried to update poster: %s", err)
+		return &pb.StatusPosterResponse{Message: "got an error when tried to update poster"},
+			fmt.Errorf("got an error when tried to update poster: %w", err)
 	}
-	if entity == nil {
-		log.Printf("failed empty JSON\n")
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err = p.data.UpdatePoster(*entity)
-	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to update poster"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-	}
+	log.WithFields(log.Fields{
+		"poster": entity,
+	}).Info("poster update was successful")
+	return &pb.StatusPosterResponse{Message: "poster update was successful"}, nil
 }
 
-func (p posterAPI) getPosterById(writer http.ResponseWriter, request *http.Request) {
+func (p PosterServer) GetPoster(ctx context.Context, in *pb.IdPosterRequest) (*pb.PosterResponse, error) {
 	entity := new(data.Poster)
-	if n, err := strconv.Atoi(request.URL.Query().Get("id")); err == nil {
-		entity.Id = n
-	} else {
-		log.Printf("failed reading id: %s", err)
-		writer.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	entity.Id = int(in.Id)
 	entry, err := p.data.FindByIdPoster(*entity)
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to get poster"))
-		if err != nil {
-			log.Println(err)
-			writer.WriteHeader(http.StatusInternalServerError)
-			return
-		}
+		log.WithFields(log.Fields{
+			"id": entity.Id,
+		}).Warningf("got an error when tried to get poster: %s", err)
+		return &pb.PosterResponse{},
+			fmt.Errorf("got an error when tried to get poster: %w", err)
 	}
-	err = json.NewEncoder(writer).Encode(entry)
-	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	log.WithFields(log.Fields{
+		"id": entity.Id,
+	}).Info("poster was successfully received")
+	return &pb.PosterResponse{
+		Id:         int64(entry.Id),
+		AccountId:  int64(entry.AccountId),
+		ScheduleId: int64(entry.ScheduleId),
+		Comment:    entry.Comment,
+	}, nil
 }
 
-func (p posterAPI) getAllPosters(writer http.ResponseWriter, _ *http.Request) {
+func (p PosterServer) GetAllPosters(ctx context.Context, in *pb.Request) (*pb.JsonResponse, error) {
 	posters, err := p.data.ReadAllPosters()
 	if err != nil {
-		_, err := writer.Write([]byte("got an error when tried to get posters"))
-		if err != nil {
-			writer.WriteHeader(http.StatusInternalServerError)
-			log.Println(err)
-			return
-		}
+		log.WithFields(log.Fields{
+			"posters": posters,
+		}).Warningf("got an error when tried to get poster: %s", err)
+		return &pb.JsonResponse{Json: ""},
+			fmt.Errorf("got an error when tried to get poster: %w", err)
 	}
-	err = json.NewEncoder(writer).Encode(posters)
+	json, err := json.Marshal(posters)
 	if err != nil {
-		log.Println(err)
-		writer.WriteHeader(http.StatusInternalServerError)
-		return
+		log.WithFields(log.Fields{
+			"posters": posters,
+		}).Warningf("got an error when tried to get json posters: %s", err)
+		return &pb.JsonResponse{Json: ""},
+			fmt.Errorf("got an error when tried to get json poster: %w", err)
 	}
+	return &pb.JsonResponse{Json: string(json)}, nil
 }

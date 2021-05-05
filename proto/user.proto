@@ -1,0 +1,80 @@
+// protoc -I . user.proto --go_out=plugins=grpc:.
+// protoc -I . user.proto --grpc-gateway_out . --go_out=plugins=grpc:.
+
+syntax = "proto3";
+
+option go_package = "/go_proto";
+
+import "google/api/annotations.proto";
+
+package user;
+
+service UserService {
+  rpc CreateUser(UserRequest) returns (IdUserResponse) {
+    option(google.api.http) = {
+      post: "/api/v1/user"
+      body: "*"
+    };
+  }
+  rpc DeleteUser(IdUserRequest) returns (StatusUserResponse) {
+    option(google.api.http) = {
+      delete: "/api/v1/user/{id}"
+    };
+  }
+  rpc UpdateUser(UserRequest) returns (StatusUserResponse) {
+    option(google.api.http) = {
+      put: "/api/v1/user"
+      body: "*"
+    };
+  }
+  rpc GetUser(IdUserRequest) returns (UserResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/user/{id}"
+    };
+  }
+  rpc GetAllUsers(UsersRequest) returns (JsonUsersResponse) {
+    option(google.api.http) = {
+      get: "/api/v1/users/{id}"
+    };
+  }
+}
+
+message UserRequest {
+  int64 Id = 1;
+  int64 AccountId = 2;
+  string FirstName = 3;
+  string LastName = 4;
+  int64 RoleId = 5;
+  int64 LocationId = 6;
+  string phoneNumber = 7;
+}
+
+message UserResponse {
+  int64 Id = 1;
+  int64 AccountId = 2;
+  string FirstName = 3;
+  string LastName = 4;
+  int64 RoleId = 5;
+  int64 LocationId = 6;
+  string phoneNumber = 7;
+}
+
+message IdUserRequest {
+  int64 id = 1;
+}
+
+message IdUserResponse {
+  int64 id = 1;
+}
+
+message StatusUserResponse{
+  string message = 1;
+}
+
+message JsonUsersResponse{
+  string json = 1;
+}
+
+message UsersRequest{
+  int64 id = 1;
+}
