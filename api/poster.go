@@ -7,9 +7,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	//"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
-	"golang-training-theater-grpc/pkg/data"
-	pb "golang-training-theater-grpc/proto/go_proto"
+	"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
+	pb "github.com/Alexandr59/golang-training-theater-grpc/proto/go_proto"
 )
 
 type PosterServer struct {

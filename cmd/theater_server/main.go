@@ -7,10 +7,8 @@ import (
 
 	"google.golang.org/grpc"
 
-	//"github.com/Alexandr59/golang-training-theater-grpc/pkg/db"
-	"golang-training-theater-grpc/pkg/db"
-	//"github.com/Alexandr59/golang-training-theater-grpc/api"
-	"golang-training-theater-grpc/api"
+	"github.com/Alexandr59/golang-training-theater-grpc/api"
+	"github.com/Alexandr59/golang-training-theater-grpc/pkg/db"
 )
 
 var (

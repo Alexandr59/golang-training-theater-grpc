@@ -8,8 +8,8 @@ import (
 	"github.com/jinzhu/gorm"
 	"google.golang.org/grpc"
 
-	"golang-training-theater-grpc/pkg/data"
-	pb "golang-training-theater-grpc/proto/go_proto"
+	"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
+	pb "github.com/Alexandr59/golang-training-theater-grpc/proto/go_proto"
 )
 
 func RegisterAllServiceServer(server *grpc.Server, conn *gorm.DB) {

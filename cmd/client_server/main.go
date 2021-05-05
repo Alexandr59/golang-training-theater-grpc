@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"golang-training-theater-grpc/api"
 	"log"
 	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
+
+	"github.com/Alexandr59/golang-training-theater-grpc/api"
 )
 
 func main() {
