@@ -1,0 +1,47 @@
+version: '3.3'
+
+services:
+  db-theater:
+    image: alexandr59/db-theater:latest
+    networks:
+      - theater-network
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=5959
+      - POSTGRES_DB=Theater_db
+    ports:
+      - 5432:5432
+    container_name: db-theater
+  backend:
+    image: alexandr59/backend:latest
+    ports:
+      - 8181:8181
+    container_name: backend
+    environment:
+      - LISTEN=0.0.0.0:8181
+      - DB_USERS_HOST=db-theater
+      - DB_USERS_PORT=5432
+      - DB_USERS_USER=postgres
+      - DB_USERS_DBNAME=Theater_db
+      - DB_USERS_PASSWORD=5959
+      - DB_USERS_SSL=disable
+    depends_on:
+      - db-theater
+    networks:
+      - theater-network
+  gateway:
+    image: alexandr59/gateway:latest
+    ports:
+      - 8080:8080
+    container_name: gateway
+    depends_on:
+      - backend
+    environment:
+      - backend=backend:8181
+      - LISTEN=0.0.0.0:8080
+    networks:
+      - theater-network
+
+networks:
+  theater-network:
+    name: theater-network
