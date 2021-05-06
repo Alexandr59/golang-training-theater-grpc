@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	serverAddr = os.Getenv("product-server")
+	serverAddr = os.Getenv("backend")
 	listen     = os.Getenv("LISTEN")
 )
 

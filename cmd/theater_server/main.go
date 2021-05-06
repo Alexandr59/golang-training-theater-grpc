@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"log"
 	"net"
 	"os"
 	"time"
 
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
 	"github.com/Alexandr59/golang-training-theater-grpc/api"
