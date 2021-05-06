@@ -1,6 +1,14 @@
 # golang-training-Theater
 
-## Description
+# Description
+
+> This is grpc-gateway project for working with theaters via database theater.
+>
+>grpc-server runs on 8181 port. gateway runs on 8080 port. database runs on 5432 port.
+>
+>To work with products use this address: ```localhost:8080/{path}```
+>
+>To run this application locally you need to clone this project and also you need to have active docker server.
 
 ##### Backend Application for storing theater
 
@@ -72,3 +80,26 @@
 > ```go run ./theater-gorm/cmd/main.go```
 
 2. Open URL ```http://localhost:8080```
+
+# Protobuf
+
+1. To generate go code from brotobuf type this command below in terminal while you're in project root:
+
+> ```protoc -I proto account.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> ```protoc -I proto genre.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> ```protoc -I proto hall.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> ```protoc -I proto location.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> ```protoc -I proto performance.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> ```protoc -I proto place.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> ```protoc -I proto poster.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> ```protoc -I proto price.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> ```protoc -I proto role.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> ```protoc -I proto schedule.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> ```protoc -I proto sector.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> ```protoc -I proto ticket.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> ```protoc -I proto user.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+
+# docker-compose
+
+1. To up docker-compose type this command below in terminal while you're in project root:
+   ```docker-compose -f docker-compose.yaml up```

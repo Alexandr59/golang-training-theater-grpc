@@ -290,21 +290,21 @@ VALUES (9, 1);
 INSERT INTO places (sector_id, name)
 VALUES (10, 1);
 INSERT INTO places (sector_id, name)
-VALUES (11, 1);
+VALUES (8, 1);
 INSERT INTO places (sector_id, name)
-VALUES (12, 1);
+VALUES (7, 1);
 INSERT INTO places (sector_id, name)
-VALUES (13, 1);
+VALUES (6, 1);
 INSERT INTO places (sector_id, name)
-VALUES (14, 1);
+VALUES (5, 1);
 INSERT INTO places (sector_id, name)
-VALUES (15, 1);
+VALUES (4, 1);
 INSERT INTO places (sector_id, name)
-VALUES (16, 1);
+VALUES (3, 1);
 INSERT INTO places (sector_id, name)
-VALUES (17, 1);
+VALUES (2, 1);
 INSERT INTO places (sector_id, name)
-VALUES (18, 1);
+VALUES (1, 1);
 
 INSERT INTO accounts(first_name, last_name, phone_number, email)
 VALUES ('Alexander', 'Antoshkov', '+37544*******', 'aaaa@gmail.com');
@@ -453,21 +453,21 @@ VALUES (1, 10, 2, 33);
 INSERT INTO prices (account_id, sector_id, performance_id, price)
 VALUES (1, 10, 3, 78);
 INSERT INTO prices (account_id, sector_id, performance_id, price)
-VALUES (1, 11, 1, 38);
+VALUES (1, 8, 1, 38);
 INSERT INTO prices (account_id, sector_id, performance_id, price)
-VALUES (1, 12, 1, 37);
+VALUES (1, 7, 1, 37);
 INSERT INTO prices (account_id, sector_id, performance_id, price)
-VALUES (1, 13, 1, 36);
+VALUES (1, 6, 1, 36);
 INSERT INTO prices (account_id, sector_id, performance_id, price)
-VALUES (1, 14, 1, 35);
+VALUES (1, 5, 1, 35);
 INSERT INTO prices (account_id, sector_id, performance_id, price)
-VALUES (1, 15, 1, 34);
+VALUES (1, 4, 1, 34);
 INSERT INTO prices (account_id, sector_id, performance_id, price)
-VALUES (1, 16, 1, 33);
+VALUES (1, 3, 1, 33);
 INSERT INTO prices (account_id, sector_id, performance_id, price)
-VALUES (1, 17, 1, 32);
+VALUES (1, 2, 1, 32);
 INSERT INTO prices (account_id, sector_id, performance_id, price)
-VALUES (1, 18, 1, 31);
+VALUES (1, 1, 1, 31);
 
 INSERT INTO tickets (account_id, schedule_id, place_id, date_of_issue, paid)
 values (1, 6, 1, now(), true);
