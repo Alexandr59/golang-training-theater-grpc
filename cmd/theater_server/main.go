@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 	"os"
+	"time"
 
+	"github.com/jinzhu/gorm"
 	"google.golang.org/grpc"
 
 	"github.com/Alexandr59/golang-training-theater-grpc/api"
@@ -42,17 +45,43 @@ func init() {
 }
 
 func main() {
-	conn, err := db.GetConnection(host, port, user, dbname, password, sslmode)
+
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	ctx, cancel = context.WithTimeout(ctx, time.Second*30)
+	defer cancel()
+
+	conn, err := connectToDbWithTimeout(ctx)
 	if err != nil {
 		log.Fatalf("can't connect to database, error: %v", err)
 	}
+
 	listener, err := net.Listen("tcp", ":8181")
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	server := grpc.NewServer()
 	api.RegisterAllServiceServer(server, conn)
-	if err = server.Serve(listener); err != nil {
+	err = server.Serve(listener)
+	if err != nil {
 		log.Fatal(err)
+	}
+
+}
+
+func connectToDbWithTimeout(ctx context.Context) (*gorm.DB, error) {
+	for {
+		time.Sleep(2 * time.Second)
+		conn, err := db.GetConnection(host, port, user, dbname, password, sslmode)
+		if err == nil {
+			return conn, nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil, err
+		default:
+			continue
+		}
 	}
 }
