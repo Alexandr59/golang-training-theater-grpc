@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	listen   = os.Getenv("LISTEN")
 	host     = os.Getenv("DB_USERS_HOST")
 	port     = os.Getenv("DB_USERS_PORT")
 	user     = os.Getenv("DB_USERS_USER")
@@ -24,6 +25,9 @@ var (
 )
 
 func init() {
+	if listen == "" {
+		listen = ":8080"
+	}
 	if host == "" {
 		host = "localhost"
 	}
@@ -56,7 +60,7 @@ func main() {
 		log.Fatalf("can't connect to database, error: %v", err)
 	}
 
-	listener, err := net.Listen("tcp", ":8181")
+	listener, err := net.Listen("tcp", listen)
 	if err != nil {
 		log.Fatal(err)
 	}

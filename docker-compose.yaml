@@ -15,10 +15,10 @@ services:
   backend:
     image: alexandr59/backend:latest
     ports:
-      - 8181:8181
+      - 8080:8080
     container_name: backend
     environment:
-      - LISTEN=0.0.0.0:8181
+      - LISTEN=0.0.0.0:8080
       - DB_USERS_HOST=db-theater
       - DB_USERS_PORT=5432
       - DB_USERS_USER=postgres
@@ -32,13 +32,13 @@ services:
   gateway:
     image: alexandr59/gateway:latest
     ports:
-      - 8080:8080
+      - 8181:8181
     container_name: gateway
     depends_on:
       - backend
     environment:
-      - backend=backend:8181
-      - LISTEN=0.0.0.0:8080
+      - backend=backend:8080
+      - LISTEN=0.0.0.0:8181
     networks:
       - theater-network
 

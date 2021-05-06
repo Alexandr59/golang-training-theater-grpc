@@ -6,7 +6,7 @@
 >
 >grpc-server runs on 8181 port. gateway runs on 8080 port. database runs on 5432 port.
 >
->To work with products use this address: ```localhost:8080/{path}```
+>To work with products use this address: ```localhost:8181/{path}```
 >
 >To run this application locally you need to clone this project and also you need to have active docker server.
 
