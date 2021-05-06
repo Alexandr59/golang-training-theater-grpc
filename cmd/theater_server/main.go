@@ -7,8 +7,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"golang-training-theater-grpc/api"
-	//"github.com/Alexandr59/golang-training-theater-grpc/api"
+	"github.com/Alexandr59/golang-training-theater-grpc/api"
 	"github.com/Alexandr59/golang-training-theater-grpc/pkg/db"
 )
 
