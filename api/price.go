@@ -37,7 +37,7 @@ func (p PriceServer) CreatePrice(ctx context.Context, in *pb.PriceRequest) (*pb.
 		log.WithFields(log.Fields{
 			"price": entity,
 		}).Warningf("got an error when tried to create price: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to create price: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to create price: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.IdPriceResponse{Id: -1}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
@@ -65,7 +65,7 @@ func (p PriceServer) DeletePrice(ctx context.Context, in *pb.IdPriceRequest) (*p
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to delete price: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to delete price: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to delete price: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusPriceResponse{Message: "got an error when tried to delete price"},
@@ -104,7 +104,7 @@ func (p PriceServer) UpdatePrice(ctx context.Context, in *pb.PriceRequest) (*pb.
 		log.WithFields(log.Fields{
 			"price": entity,
 		}).Warningf("got an error when tried to update price: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to update price: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to update price: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusPriceResponse{Message: "got an error when tried to update price"},
@@ -132,7 +132,7 @@ func (p PriceServer) GetPrice(ctx context.Context, in *pb.IdPriceRequest) (*pb.P
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to get price: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to get price: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to get price: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.PriceResponse{}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)

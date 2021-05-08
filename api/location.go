@@ -36,7 +36,7 @@ func (l LocationServer) CreateLocation(ctx context.Context, in *pb.LocationReque
 		log.WithFields(log.Fields{
 			"location": entity,
 		}).Warningf("got an error when tried to create location: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to create location: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to create location: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.IdLocationResponse{Id: -1}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
@@ -64,7 +64,7 @@ func (l LocationServer) DeleteLocation(ctx context.Context, in *pb.IdLocationReq
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to delete location: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to delete location: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to delete location: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusLocationResponse{Message: "got an error when tried to delete location"},
@@ -102,7 +102,7 @@ func (l LocationServer) UpdateLocation(ctx context.Context, in *pb.LocationReque
 		log.WithFields(log.Fields{
 			"location": entity,
 		}).Warningf("got an error when tried to update location: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to update location: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to update location: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusLocationResponse{Message: "got an error when tried to update location"},
@@ -130,7 +130,7 @@ func (l LocationServer) GetLocation(ctx context.Context, in *pb.IdLocationReques
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to get location: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to get location: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to get location: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.LocationResponse{}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)

@@ -3,9 +3,10 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
 	pb "github.com/Alexandr59/golang-training-theater-grpc/proto/go_proto"
@@ -20,6 +21,12 @@ func NewTicketServer(a data.TicketData) *TicketServer {
 }
 
 func (t TicketServer) CreateTicket(ctx context.Context, in *pb.TicketRequest) (*pb.IdTicketResponse, error) {
+	if err := checkTicketRequest(in); err != nil {
+		log.WithFields(log.Fields{
+			"ticket": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.IdTicketResponse{Id: -1}, err
+	}
 	entity := data.Ticket{
 		AccountId:   int(in.GetAccountId()),
 		ScheduleId:  int(in.GetScheduleId()),
@@ -34,16 +41,27 @@ func (t TicketServer) CreateTicket(ctx context.Context, in *pb.TicketRequest) (*
 		log.WithFields(log.Fields{
 			"ticket": entity,
 		}).Warningf("got an error when tried to create ticket: %s", err)
-		return &pb.IdTicketResponse{Id: -1}, fmt.Errorf("got an error when tried to create ticket: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to create ticket: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.IdTicketResponse{Id: -1}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.IdTicketResponse{Id: -1}, errWithDetails.Err()
 	}
 	entity.Id = id
 	log.WithFields(log.Fields{
 		"ticket": entity,
-	}).Info("create ticket")
+	}).Info("ticket has been successfully created")
 	return &pb.IdTicketResponse{Id: int64(id)}, nil
 }
 
 func (t TicketServer) DeleteTicket(ctx context.Context, in *pb.IdTicketRequest) (*pb.StatusTicketResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"ticket": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusTicketResponse{Message: "empty fields error"}, err
+	}
 	entity := new(data.Ticket)
 	entity.Id = int(in.Id)
 	err := t.data.DeleteTicket(*entity)
@@ -51,8 +69,13 @@ func (t TicketServer) DeleteTicket(ctx context.Context, in *pb.IdTicketRequest) 
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to delete ticket: %s", err)
-		return &pb.StatusTicketResponse{Message: "got an error when tried to delete ticket"},
-			fmt.Errorf("got an error when tried to delete ticket: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to delete ticket: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.StatusTicketResponse{Message: "got an error when tried to delete ticket"},
+				status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.StatusTicketResponse{Message: "got an error when tried to delete ticket"}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"id": entity.Id,
@@ -61,6 +84,18 @@ func (t TicketServer) DeleteTicket(ctx context.Context, in *pb.IdTicketRequest) 
 }
 
 func (t TicketServer) UpdateTicket(ctx context.Context, in *pb.TicketRequest) (*pb.StatusTicketResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"ticket": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusTicketResponse{Message: "empty fields error"}, err
+	}
+	if err := checkTicketRequest(in); err != nil {
+		log.WithFields(log.Fields{
+			"ticket": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusTicketResponse{Message: "empty fields error"}, err
+	}
 	entity := data.Ticket{
 		Id:          int(in.GetId()),
 		AccountId:   int(in.GetAccountId()),
@@ -76,8 +111,13 @@ func (t TicketServer) UpdateTicket(ctx context.Context, in *pb.TicketRequest) (*
 		log.WithFields(log.Fields{
 			"ticket": entity,
 		}).Warningf("got an error when tried to update ticket: %s", err)
-		return &pb.StatusTicketResponse{Message: "got an error when tried to update ticket"},
-			fmt.Errorf("got an error when tried to update ticket: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to update ticket: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.StatusTicketResponse{Message: "got an error when tried to update ticket"},
+				status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.StatusTicketResponse{Message: "got an error when tried to update ticket"}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"ticket": entity,
@@ -86,6 +126,12 @@ func (t TicketServer) UpdateTicket(ctx context.Context, in *pb.TicketRequest) (*
 }
 
 func (t TicketServer) GetTicket(ctx context.Context, in *pb.IdTicketRequest) (*pb.TicketResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"ticket": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.TicketResponse{}, err
+	}
 	entity := new(data.Ticket)
 	entity.Id = int(in.Id)
 	entry, err := t.data.FindByIdTicket(*entity)
@@ -93,8 +139,12 @@ func (t TicketServer) GetTicket(ctx context.Context, in *pb.IdTicketRequest) (*p
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to get ticket: %s", err)
-		return &pb.TicketResponse{},
-			fmt.Errorf("got an error when tried to get ticket: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to get ticket: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.TicketResponse{}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.TicketResponse{}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"id": entity.Id,
@@ -117,16 +167,52 @@ func (t TicketServer) GetAllTickets(ctx context.Context, in *pb.TicketsRequest) 
 		log.WithFields(log.Fields{
 			"tickets": tickets,
 		}).Warningf("got an error when tried to get tickets: %s", err)
-		return &pb.JsonTicketsResponse{Json: ""},
-			fmt.Errorf("got an error when tried to get tickets: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to get tickets: %w", err)
+		return &pb.JsonTicketsResponse{Json: ""}, s.Err()
 	}
 	json, err := json.Marshal(tickets)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"tickets": tickets,
 		}).Warningf("got an error when tried to get json tickets: %s", err)
-		return &pb.JsonTicketsResponse{Json: ""},
-			fmt.Errorf("got an error when tried to get json tickets: %w", err)
+		s := status.Newf(codes.Unknown, "got an error when tried to get json tickets: %w", err)
+		return &pb.JsonTicketsResponse{Json: ""}, s.Err()
 	}
 	return &pb.JsonTicketsResponse{Json: string(json)}, nil
+}
+
+func checkTicketRequest(in *pb.TicketRequest) error {
+	if in.GetAccountId() <= 0 {
+		s := status.Newf(codes.InvalidArgument, "didn't specify the field {AccountId}: %s", in.GetAccountId())
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return errWithDetails.Err()
+	}
+	if in.GetScheduleId() <= 0 {
+		s := status.Newf(codes.InvalidArgument, "didn't specify the field {ScheduleId}: %s", in.GetScheduleId())
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return errWithDetails.Err()
+	}
+	if in.GetPlaceId() <= 0 {
+		s := status.Newf(codes.InvalidArgument, "didn't specify the field {PlaceId}: %s", in.GetPlaceId())
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return errWithDetails.Err()
+	}
+	if in.GetDateOfIssue() == "" {
+		s := status.Newf(codes.InvalidArgument, "didn't specify the field {DateOfIssue}: %s", in.GetDateOfIssue())
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return errWithDetails.Err()
+	}
+	return nil
 }

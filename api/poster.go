@@ -37,7 +37,7 @@ func (p PosterServer) CreatePoster(ctx context.Context, in *pb.PosterRequest) (*
 		log.WithFields(log.Fields{
 			"poster": entity,
 		}).Warningf("got an error when tried to create poster: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to create poster: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to create poster: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.IdPosterResponse{Id: -1}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
@@ -65,7 +65,7 @@ func (p PosterServer) DeletePoster(ctx context.Context, in *pb.IdPosterRequest) 
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to delete poster: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to delete poster: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to delete poster: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusPosterResponse{Message: "got an error when tried to delete poster"},
@@ -103,7 +103,7 @@ func (p PosterServer) UpdatePoster(ctx context.Context, in *pb.PosterRequest) (*
 		log.WithFields(log.Fields{
 			"poster": entity,
 		}).Warningf("got an error when tried to update poster: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to update poster: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to update poster: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusPosterResponse{Message: "got an error when tried to update poster"},
@@ -131,7 +131,7 @@ func (p PosterServer) GetPoster(ctx context.Context, in *pb.IdPosterRequest) (*p
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to get poster: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to get poster: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to get poster: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.PosterResponse{}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
@@ -155,24 +155,16 @@ func (p PosterServer) GetAllPosters(ctx context.Context, in *pb.Request) (*pb.Js
 		log.WithFields(log.Fields{
 			"posters": posters,
 		}).Warningf("got an error when tried to get posters: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to get posters: %w", err)
-		errWithDetails, err := s.WithDetails(in)
-		if err != nil {
-			return &pb.JsonResponse{Json: ""}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
-		}
-		return &pb.JsonResponse{Json: ""}, errWithDetails.Err()
+		s := status.Newf(codes.Internal, "got an error when tried to get posters: %w", err)
+		return &pb.JsonResponse{Json: ""}, s.Err()
 	}
 	jsonPosters, err := json.Marshal(posters)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"posters": posters,
 		}).Warningf("got an error when tried to get json posters: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to get json posters: %w", err)
-		errWithDetails, err := s.WithDetails(in)
-		if err != nil {
-			return &pb.JsonResponse{Json: ""}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
-		}
-		return &pb.JsonResponse{Json: ""}, errWithDetails.Err()
+		s := status.Newf(codes.Unknown, "got an error when tried to get json posters: %w", err)
+		return &pb.JsonResponse{Json: ""}, s.Err()
 	}
 	return &pb.JsonResponse{Json: string(jsonPosters)}, nil
 }

@@ -2,10 +2,10 @@ package api
 
 import (
 	"context"
-	"log"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jinzhu/gorm"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
 	"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"

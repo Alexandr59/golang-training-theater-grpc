@@ -37,7 +37,7 @@ func (a AccountServer) CreateAccount(ctx context.Context, in *pb.AccountRequest)
 		log.WithFields(log.Fields{
 			"account": entity,
 		}).Warningf("got an error when tried to create account: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to create account: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to create account: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.IdAccountResponse{Id: -1}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
@@ -65,7 +65,7 @@ func (a AccountServer) DeleteAccount(ctx context.Context, in *pb.IdAccountReques
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to delete account: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to delete account: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to delete account: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusAccountResponse{Message: "got an error when tried to delete account"},
@@ -104,7 +104,7 @@ func (a AccountServer) UpdateAccount(ctx context.Context, in *pb.AccountRequest)
 		log.WithFields(log.Fields{
 			"account": entity,
 		}).Warningf("got an error when tried to update account: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to update account: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to update account: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusAccountResponse{Message: "got an error when tried to update account"},
@@ -132,7 +132,7 @@ func (a AccountServer) GetAccount(ctx context.Context, in *pb.IdAccountRequest) 
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to get account: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to get account: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to get account: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.AccountResponse{}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)

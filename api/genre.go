@@ -34,7 +34,7 @@ func (g GenreServer) CreateGenre(ctx context.Context, in *pb.GenreRequest) (*pb.
 		log.WithFields(log.Fields{
 			"genre": entity,
 		}).Warningf("got an error when tried to create genre: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to create genre: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to create genre: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.IdGenreResponse{Id: -1}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
@@ -62,7 +62,7 @@ func (g GenreServer) DeleteGenre(ctx context.Context, in *pb.IdGenreRequest) (*p
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to delete genre: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to delete genre: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to delete genre: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusGenreResponse{Message: "got an error when tried to delete genre"},
@@ -98,7 +98,7 @@ func (g GenreServer) UpdateGenre(ctx context.Context, in *pb.GenreRequest) (*pb.
 		log.WithFields(log.Fields{
 			"genre": entity,
 		}).Warningf("got an error when tried to update genre: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to update genre: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to update genre: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusGenreResponse{Message: "got an error when tried to update genre"},
@@ -126,7 +126,7 @@ func (g GenreServer) GetGenre(ctx context.Context, in *pb.IdGenreRequest) (*pb.G
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to get genre: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to get genre: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to get genre: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.GenreResponse{}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)

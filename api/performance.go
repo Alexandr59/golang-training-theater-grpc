@@ -37,7 +37,7 @@ func (p PerformanceServer) CreatePerformance(ctx context.Context, in *pb.Perform
 		log.WithFields(log.Fields{
 			"performance": entity,
 		}).Warningf("got an error when tried to create performance: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to create performance: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to create performance: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.IdPerformanceResponse{Id: -1}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
@@ -65,7 +65,7 @@ func (p PerformanceServer) DeletePerformance(ctx context.Context, in *pb.IdPerfo
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to delete performance: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to delete performance: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to delete performance: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusPerformanceResponse{Message: "got an error when tried to delete performance"},
@@ -104,7 +104,7 @@ func (p PerformanceServer) UpdatePerformance(ctx context.Context, in *pb.Perform
 		log.WithFields(log.Fields{
 			"performance": entity,
 		}).Warningf("got an error when tried to update performance: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to update performance: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to update performance: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusPerformanceResponse{Message: "got an error when tried to update performance"},
@@ -132,7 +132,7 @@ func (p PerformanceServer) GetPerformance(ctx context.Context, in *pb.IdPerforma
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to get performance: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to get performance: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to get performance: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.PerformanceResponse{}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)

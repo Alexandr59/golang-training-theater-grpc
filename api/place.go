@@ -35,7 +35,7 @@ func (p PlaceServer) CreatePlace(ctx context.Context, in *pb.PlaceRequest) (*pb.
 		log.WithFields(log.Fields{
 			"place": entity,
 		}).Warningf("got an error when tried to create place: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to create place: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to create place: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.IdPlaceResponse{Id: -1}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
@@ -63,7 +63,7 @@ func (p PlaceServer) DeletePlace(ctx context.Context, in *pb.IdPlaceRequest) (*p
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to delete place: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to delete place: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to delete place: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusPlaceResponse{Message: "got an error when tried to delete place"},
@@ -100,7 +100,7 @@ func (p PlaceServer) UpdatePlace(ctx context.Context, in *pb.PlaceRequest) (*pb.
 		log.WithFields(log.Fields{
 			"place": entity,
 		}).Warningf("got an error when tried to update place: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to update place: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to update place: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusPlaceResponse{Message: "got an error when tried to update place"},
@@ -128,7 +128,7 @@ func (p PlaceServer) GetPlace(ctx context.Context, in *pb.IdPlaceRequest) (*pb.P
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to get place: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to get place: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to get place: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.PlaceResponse{}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)

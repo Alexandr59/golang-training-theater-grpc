@@ -2,9 +2,10 @@ package api
 
 import (
 	"context"
-	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
 	pb "github.com/Alexandr59/golang-training-theater-grpc/proto/go_proto"
@@ -19,6 +20,12 @@ func NewSectorServer(a data.SectorData) *SectorServer {
 }
 
 func (s SectorServer) CreateSector(ctx context.Context, in *pb.SectorRequest) (*pb.IdSectorResponse, error) {
+	if err := checkSectorRequest(in); err != nil {
+		log.WithFields(log.Fields{
+			"sector": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.IdSectorResponse{Id: -1}, err
+	}
 	entity := data.Sector{
 		Name: in.GetName(),
 	}
@@ -27,16 +34,27 @@ func (s SectorServer) CreateSector(ctx context.Context, in *pb.SectorRequest) (*
 		log.WithFields(log.Fields{
 			"sector": entity,
 		}).Warningf("got an error when tried to create sector: %s", err)
-		return &pb.IdSectorResponse{Id: -1}, fmt.Errorf("got an error when tried to create sector: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to create sector: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.IdSectorResponse{Id: -1}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.IdSectorResponse{Id: -1}, errWithDetails.Err()
 	}
 	entity.Id = id
 	log.WithFields(log.Fields{
 		"sector": entity,
-	}).Info("create sector")
+	}).Info("sector has been successfully created")
 	return &pb.IdSectorResponse{Id: int64(id)}, nil
 }
 
 func (s SectorServer) DeleteSector(ctx context.Context, in *pb.IdSectorRequest) (*pb.StatusSectorResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"sector": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusSectorResponse{Message: "empty fields error"}, err
+	}
 	entity := new(data.Sector)
 	entity.Id = int(in.Id)
 	err := s.data.DeleteSector(*entity)
@@ -44,8 +62,13 @@ func (s SectorServer) DeleteSector(ctx context.Context, in *pb.IdSectorRequest) 
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to delete sector: %s", err)
-		return &pb.StatusSectorResponse{Message: "got an error when tried to delete sector"},
-			fmt.Errorf("got an error when tried to delete sector: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to delete sector: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.StatusSectorResponse{Message: "got an error when tried to delete sector"},
+				status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.StatusSectorResponse{Message: "got an error when tried to delete sector"}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"id": entity.Id,
@@ -54,6 +77,18 @@ func (s SectorServer) DeleteSector(ctx context.Context, in *pb.IdSectorRequest) 
 }
 
 func (s SectorServer) UpdateSector(ctx context.Context, in *pb.SectorRequest) (*pb.StatusSectorResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"sector": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusSectorResponse{Message: "empty fields error"}, err
+	}
+	if err := checkSectorRequest(in); err != nil {
+		log.WithFields(log.Fields{
+			"sector": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusSectorResponse{Message: "empty fields error"}, err
+	}
 	entity := data.Sector{
 		Id:   int(in.GetId()),
 		Name: in.GetName(),
@@ -63,8 +98,13 @@ func (s SectorServer) UpdateSector(ctx context.Context, in *pb.SectorRequest) (*
 		log.WithFields(log.Fields{
 			"sector": entity,
 		}).Warningf("got an error when tried to update sector: %s", err)
-		return &pb.StatusSectorResponse{Message: "got an error when tried to update sector"},
-			fmt.Errorf("got an error when tried to update sector: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to update sector: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.StatusSectorResponse{Message: "got an error when tried to update sector"},
+				status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.StatusSectorResponse{Message: "got an error when tried to update sector"}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"sector": entity,
@@ -73,6 +113,12 @@ func (s SectorServer) UpdateSector(ctx context.Context, in *pb.SectorRequest) (*
 }
 
 func (s SectorServer) GetSector(ctx context.Context, in *pb.IdSectorRequest) (*pb.SectorResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"sector": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.SectorResponse{}, err
+	}
 	entity := new(data.Sector)
 	entity.Id = int(in.Id)
 	entry, err := s.data.FindByIdSector(*entity)
@@ -80,8 +126,12 @@ func (s SectorServer) GetSector(ctx context.Context, in *pb.IdSectorRequest) (*p
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to get sector: %s", err)
-		return &pb.SectorResponse{},
-			fmt.Errorf("got an error when tried to get sector: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to get sector: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.SectorResponse{}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.SectorResponse{}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"id": entity.Id,
@@ -90,4 +140,16 @@ func (s SectorServer) GetSector(ctx context.Context, in *pb.IdSectorRequest) (*p
 		Id:   int64(entry.Id),
 		Name: entry.Name,
 	}, nil
+}
+
+func checkSectorRequest(in *pb.SectorRequest) error {
+	if in.GetName() == "" {
+		s := status.Newf(codes.InvalidArgument, "didn't specify the field {Name}: %s", in.GetName())
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return errWithDetails.Err()
+	}
+	return nil
 }

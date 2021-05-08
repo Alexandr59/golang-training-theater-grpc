@@ -37,7 +37,7 @@ func (h HallServer) CreateHall(ctx context.Context, in *pb.HallRequest) (*pb.IdH
 		log.WithFields(log.Fields{
 			"hall": entity,
 		}).Warningf("got an error when tried to create hall: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to create hall: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to create hall: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.IdHallResponse{Id: -1}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
@@ -65,7 +65,7 @@ func (h HallServer) DeleteHall(ctx context.Context, in *pb.IdHallRequest) (*pb.S
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to delete hall: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to delete account: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to delete account: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusHallResponse{Message: "got an error when tried to delete hall"},
@@ -104,7 +104,7 @@ func (h HallServer) UpdateHall(ctx context.Context, in *pb.HallRequest) (*pb.Sta
 		log.WithFields(log.Fields{
 			"hall": entity,
 		}).Warningf("got an error when tried to update hall: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to update hall: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to update hall: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.StatusHallResponse{Message: "got an error when tried to update hall"},
@@ -132,7 +132,7 @@ func (h HallServer) GetHall(ctx context.Context, in *pb.IdHallRequest) (*pb.Hall
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to get hall: %s", err)
-		s := status.Newf(codes.Canceled, "got an error when tried to get hall: %s, with error: %w", in, err)
+		s := status.Newf(codes.Internal, "got an error when tried to get hall: %s, with error: %w", in, err)
 		errWithDetails, err := s.WithDetails(in)
 		if err != nil {
 			return &pb.HallResponse{}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
