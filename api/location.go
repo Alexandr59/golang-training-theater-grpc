@@ -2,9 +2,10 @@ package api
 
 import (
 	"context"
-	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
 	pb "github.com/Alexandr59/golang-training-theater-grpc/proto/go_proto"
@@ -19,6 +20,12 @@ func NewLocationServer(a data.LocationData) *LocationServer {
 }
 
 func (l LocationServer) CreateLocation(ctx context.Context, in *pb.LocationRequest) (*pb.IdLocationResponse, error) {
+	if err := checkLocationRequest(in); err != nil {
+		log.WithFields(log.Fields{
+			"location": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.IdLocationResponse{Id: -1}, err
+	}
 	entity := data.Location{
 		AccountId:   int(in.GetAccountId()),
 		Address:     in.GetAddress(),
@@ -29,16 +36,27 @@ func (l LocationServer) CreateLocation(ctx context.Context, in *pb.LocationReque
 		log.WithFields(log.Fields{
 			"location": entity,
 		}).Warningf("got an error when tried to create location: %s", err)
-		return &pb.IdLocationResponse{Id: -1}, fmt.Errorf("got an error when tried to create location: %w", err)
+		s := status.Newf(codes.Canceled, "got an error when tried to create location: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.IdLocationResponse{Id: -1}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.IdLocationResponse{Id: -1}, errWithDetails.Err()
 	}
 	entity.Id = id
 	log.WithFields(log.Fields{
 		"location": entity,
-	}).Info("create location")
+	}).Info("location has been successfully created")
 	return &pb.IdLocationResponse{Id: int64(id)}, nil
 }
 
 func (l LocationServer) DeleteLocation(ctx context.Context, in *pb.IdLocationRequest) (*pb.StatusLocationResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"location": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusLocationResponse{Message: "empty fields error"}, err
+	}
 	entity := new(data.Location)
 	entity.Id = int(in.Id)
 	err := l.data.DeleteLocation(*entity)
@@ -46,8 +64,13 @@ func (l LocationServer) DeleteLocation(ctx context.Context, in *pb.IdLocationReq
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to delete location: %s", err)
-		return &pb.StatusLocationResponse{Message: "got an error when tried to delete location"},
-			fmt.Errorf("got an error when tried to delete location: %w", err)
+		s := status.Newf(codes.Canceled, "got an error when tried to delete location: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.StatusLocationResponse{Message: "got an error when tried to delete location"},
+				status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.StatusLocationResponse{Message: "got an error when tried to delete location"}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"id": entity.Id,
@@ -56,6 +79,18 @@ func (l LocationServer) DeleteLocation(ctx context.Context, in *pb.IdLocationReq
 }
 
 func (l LocationServer) UpdateLocation(ctx context.Context, in *pb.LocationRequest) (*pb.StatusLocationResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"location": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusLocationResponse{Message: "empty fields error"}, err
+	}
+	if err := checkLocationRequest(in); err != nil {
+		log.WithFields(log.Fields{
+			"location": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusLocationResponse{Message: "empty fields error"}, err
+	}
 	entity := data.Location{
 		Id:          int(in.GetId()),
 		AccountId:   int(in.GetAccountId()),
@@ -67,8 +102,13 @@ func (l LocationServer) UpdateLocation(ctx context.Context, in *pb.LocationReque
 		log.WithFields(log.Fields{
 			"location": entity,
 		}).Warningf("got an error when tried to update location: %s", err)
-		return &pb.StatusLocationResponse{Message: "got an error when tried to update location"},
-			fmt.Errorf("got an error when tried to update location: %w", err)
+		s := status.Newf(codes.Canceled, "got an error when tried to update location: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.StatusLocationResponse{Message: "got an error when tried to update location"},
+				status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.StatusLocationResponse{Message: "got an error when tried to update location"}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"location": entity,
@@ -77,6 +117,12 @@ func (l LocationServer) UpdateLocation(ctx context.Context, in *pb.LocationReque
 }
 
 func (l LocationServer) GetLocation(ctx context.Context, in *pb.IdLocationRequest) (*pb.LocationResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"location": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.LocationResponse{}, err
+	}
 	entity := new(data.Location)
 	entity.Id = int(in.Id)
 	entry, err := l.data.FindByIdLocation(*entity)
@@ -84,8 +130,12 @@ func (l LocationServer) GetLocation(ctx context.Context, in *pb.IdLocationReques
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to get location: %s", err)
-		return &pb.LocationResponse{},
-			fmt.Errorf("got an error when tried to get location: %w", err)
+		s := status.Newf(codes.Canceled, "got an error when tried to get location: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.LocationResponse{}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.LocationResponse{}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"id": entity.Id,
@@ -96,4 +146,32 @@ func (l LocationServer) GetLocation(ctx context.Context, in *pb.IdLocationReques
 		Address:     entry.Address,
 		PhoneNumber: entry.PhoneNumber,
 	}, nil
+}
+
+func checkLocationRequest(in *pb.LocationRequest) error {
+	if in.GetAccountId() <= 0 {
+		s := status.Newf(codes.InvalidArgument, "didn't specify the field {AccountId}: %s", in.GetAccountId())
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return errWithDetails.Err()
+	}
+	if in.GetAddress() == "" {
+		s := status.Newf(codes.InvalidArgument, "didn't specify the field {Address}: %s", in.GetAddress())
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return errWithDetails.Err()
+	}
+	if in.GetPhoneNumber() == "" {
+		s := status.Newf(codes.InvalidArgument, "didn't specify the field {PhoneNumber}: %s", in.GetPhoneNumber())
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return errWithDetails.Err()
+	}
+	return nil
 }
