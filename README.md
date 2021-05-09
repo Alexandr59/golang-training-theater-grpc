@@ -4,7 +4,7 @@
 
 > This is grpc-gateway project for working with theaters via database theater.
 >
->grpc-server runs on 8181 port. gateway runs on 8080 port. database runs on 5432 port.
+>grpc-server runs on 8080 port. gateway runs on 8181 port. database runs on 5432 port.
 >
 >To work with products use this address: ```localhost:8181/{path}```
 >
