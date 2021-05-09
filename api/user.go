@@ -175,7 +175,7 @@ func (u UserServer) GetAllUsers(ctx context.Context, in *pb.UsersRequest) (*pb.J
 		s := status.Newf(codes.Internal, "got an error when tried to get users: %w", err)
 		return &pb.JsonUsersResponse{Json: ""}, s.Err()
 	}
-	json, err := json.Marshal(users)
+	jsonUsers, err := json.Marshal(users)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"users": users,
@@ -183,7 +183,10 @@ func (u UserServer) GetAllUsers(ctx context.Context, in *pb.UsersRequest) (*pb.J
 		s := status.Newf(codes.Unknown, "got an error when tried to get json users: %w", err)
 		return &pb.JsonUsersResponse{Json: ""}, s.Err()
 	}
-	return &pb.JsonUsersResponse{Json: string(json)}, nil
+	log.WithFields(log.Fields{
+		"users": jsonUsers,
+	}).Info("user was successfully received")
+	return &pb.JsonUsersResponse{Json: string(jsonUsers)}, nil
 }
 
 func checkUserRequest(in *pb.UserRequest) error {

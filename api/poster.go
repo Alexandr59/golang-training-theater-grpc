@@ -166,6 +166,9 @@ func (p PosterServer) GetAllPosters(ctx context.Context, in *pb.Request) (*pb.Js
 		s := status.Newf(codes.Unknown, "got an error when tried to get json posters: %w", err)
 		return &pb.JsonResponse{Json: ""}, s.Err()
 	}
+	log.WithFields(log.Fields{
+		"poster": jsonPosters,
+	}).Info("posters was successfully received")
 	return &pb.JsonResponse{Json: string(jsonPosters)}, nil
 }
 

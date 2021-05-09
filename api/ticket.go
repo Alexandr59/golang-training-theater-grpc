@@ -170,7 +170,7 @@ func (t TicketServer) GetAllTickets(ctx context.Context, in *pb.TicketsRequest) 
 		s := status.Newf(codes.Internal, "got an error when tried to get tickets: %w", err)
 		return &pb.JsonTicketsResponse{Json: ""}, s.Err()
 	}
-	json, err := json.Marshal(tickets)
+	jsonTickets, err := json.Marshal(tickets)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"tickets": tickets,
@@ -178,7 +178,10 @@ func (t TicketServer) GetAllTickets(ctx context.Context, in *pb.TicketsRequest) 
 		s := status.Newf(codes.Unknown, "got an error when tried to get json tickets: %w", err)
 		return &pb.JsonTicketsResponse{Json: ""}, s.Err()
 	}
-	return &pb.JsonTicketsResponse{Json: string(json)}, nil
+	log.WithFields(log.Fields{
+		"tickets": jsonTickets,
+	}).Info("tickets was successfully received")
+	return &pb.JsonTicketsResponse{Json: string(jsonTickets)}, nil
 }
 
 func checkTicketRequest(in *pb.TicketRequest) error {
