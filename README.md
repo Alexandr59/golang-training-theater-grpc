@@ -86,18 +86,31 @@
 1. To generate go code from brotobuf type this command below in terminal while you're in project root:
 
 > ```protoc -I proto account.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> 
 > ```protoc -I proto genre.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> 
 > ```protoc -I proto hall.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> 
 > ```protoc -I proto location.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> 
 > ```protoc -I proto performance.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> 
 > ```protoc -I proto place.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> 
 > ```protoc -I proto poster.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> 
 > ```protoc -I proto price.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> 
 > ```protoc -I proto role.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> 
 > ```protoc -I proto schedule.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> 
 > ```protoc -I proto sector.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> 
 > ```protoc -I proto ticket.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> 
 > ```protoc -I proto user.proto --grpc-gateway_out proto --go_out=plugins=grpc:.```
+> 
 
 # docker-compose
 
