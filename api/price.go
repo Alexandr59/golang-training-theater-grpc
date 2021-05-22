@@ -2,9 +2,10 @@ package api
 
 import (
 	"context"
-	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
 	pb "github.com/Alexandr59/golang-training-theater-grpc/proto/go_proto"
@@ -19,6 +20,12 @@ func NewPriceServer(a data.PriceData) *PriceServer {
 }
 
 func (p PriceServer) CreatePrice(ctx context.Context, in *pb.PriceRequest) (*pb.IdPriceResponse, error) {
+	if err := checkPriceRequest(in); err != nil {
+		log.WithFields(log.Fields{
+			"price": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.IdPriceResponse{Id: -1}, err
+	}
 	entity := data.Price{
 		AccountId:     int(in.GetAccountId()),
 		SectorId:      int(in.GetSectorId()),
@@ -30,16 +37,27 @@ func (p PriceServer) CreatePrice(ctx context.Context, in *pb.PriceRequest) (*pb.
 		log.WithFields(log.Fields{
 			"price": entity,
 		}).Warningf("got an error when tried to create price: %s", err)
-		return &pb.IdPriceResponse{Id: -1}, fmt.Errorf("got an error when tried to create price: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to create price: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.IdPriceResponse{Id: -1}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.IdPriceResponse{Id: -1}, errWithDetails.Err()
 	}
 	entity.Id = id
 	log.WithFields(log.Fields{
 		"price": entity,
-	}).Info("create price")
+	}).Info("price has been successfully created")
 	return &pb.IdPriceResponse{Id: int64(id)}, nil
 }
 
 func (p PriceServer) DeletePrice(ctx context.Context, in *pb.IdPriceRequest) (*pb.StatusPriceResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"price": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusPriceResponse{Message: "empty fields error"}, err
+	}
 	entity := new(data.Price)
 	entity.Id = int(in.Id)
 	err := p.data.DeletePrice(*entity)
@@ -47,8 +65,13 @@ func (p PriceServer) DeletePrice(ctx context.Context, in *pb.IdPriceRequest) (*p
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to delete price: %s", err)
-		return &pb.StatusPriceResponse{Message: "got an error when tried to delete price"},
-			fmt.Errorf("got an error when tried to delete price: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to delete price: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.StatusPriceResponse{Message: "got an error when tried to delete price"},
+				status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.StatusPriceResponse{Message: "got an error when tried to delete price"}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"id": entity.Id,
@@ -57,6 +80,18 @@ func (p PriceServer) DeletePrice(ctx context.Context, in *pb.IdPriceRequest) (*p
 }
 
 func (p PriceServer) UpdatePrice(ctx context.Context, in *pb.PriceRequest) (*pb.StatusPriceResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"price": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusPriceResponse{Message: "empty fields error"}, err
+	}
+	if err := checkPriceRequest(in); err != nil {
+		log.WithFields(log.Fields{
+			"price": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusPriceResponse{Message: "empty fields error"}, err
+	}
 	entity := data.Price{
 		Id:            int(in.GetId()),
 		AccountId:     int(in.GetAccountId()),
@@ -69,8 +104,13 @@ func (p PriceServer) UpdatePrice(ctx context.Context, in *pb.PriceRequest) (*pb.
 		log.WithFields(log.Fields{
 			"price": entity,
 		}).Warningf("got an error when tried to update price: %s", err)
-		return &pb.StatusPriceResponse{Message: "got an error when tried to update price"},
-			fmt.Errorf("got an error when tried to update price: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to update price: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.StatusPriceResponse{Message: "got an error when tried to update price"},
+				status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.StatusPriceResponse{Message: "got an error when tried to update price"}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"price": entity,
@@ -79,6 +119,12 @@ func (p PriceServer) UpdatePrice(ctx context.Context, in *pb.PriceRequest) (*pb.
 }
 
 func (p PriceServer) GetPrice(ctx context.Context, in *pb.IdPriceRequest) (*pb.PriceResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"price": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.PriceResponse{}, err
+	}
 	entity := new(data.Price)
 	entity.Id = int(in.Id)
 	entry, err := p.data.FindByIdPrice(*entity)
@@ -86,8 +132,12 @@ func (p PriceServer) GetPrice(ctx context.Context, in *pb.IdPriceRequest) (*pb.P
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to get price: %s", err)
-		return &pb.PriceResponse{},
-			fmt.Errorf("got an error when tried to get price: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to get price: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.PriceResponse{}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.PriceResponse{}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"id": entity.Id,
@@ -99,4 +149,40 @@ func (p PriceServer) GetPrice(ctx context.Context, in *pb.IdPriceRequest) (*pb.P
 		PerformanceId: int64(entry.PerformanceId),
 		Price:         int64(entry.Price),
 	}, nil
+}
+
+func checkPriceRequest(in *pb.PriceRequest) error {
+	if in.GetAccountId() <= 0 {
+		s := status.Newf(codes.InvalidArgument, "didn't specify the field {AccountId}: %s", in.GetAccountId())
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return errWithDetails.Err()
+	}
+	if in.GetSectorId() <= 0 {
+		s := status.Newf(codes.InvalidArgument, "didn't specify the field {SectorId}: %s", in.GetSectorId())
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return errWithDetails.Err()
+	}
+	if in.GetPerformanceId() <= 0 {
+		s := status.Newf(codes.InvalidArgument, "didn't specify the field {PerformanceId}: %s", in.GetPerformanceId())
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return errWithDetails.Err()
+	}
+	if in.GetPrice() <= 0 {
+		s := status.Newf(codes.InvalidArgument, "didn't specify the field {Price}: %s", in.GetPrice())
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return errWithDetails.Err()
+	}
+	return nil
 }

@@ -2,9 +2,10 @@ package api
 
 import (
 	"context"
-	"fmt"
 
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/Alexandr59/golang-training-theater-grpc/pkg/data"
 	pb "github.com/Alexandr59/golang-training-theater-grpc/proto/go_proto"
@@ -19,25 +20,41 @@ func NewGenreServer(a data.GenreData) *GenreServer {
 }
 
 func (g GenreServer) CreateGenre(ctx context.Context, in *pb.GenreRequest) (*pb.IdGenreResponse, error) {
+	if err := checkGenreRequest(in); err != nil {
+		log.WithFields(log.Fields{
+			"genre": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.IdGenreResponse{Id: -1}, err
+	}
 	entity := data.Genre{
 		Name: in.GetName(),
 	}
 	id, err := g.data.AddGenre(entity)
 	if err != nil {
-		//_, err := writer.Write([]byte("got an error when tried to create genre"))
 		log.WithFields(log.Fields{
 			"genre": entity,
 		}).Warningf("got an error when tried to create genre: %s", err)
-		return &pb.IdGenreResponse{Id: -1}, fmt.Errorf("got an error when tried to create genre: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to create genre: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.IdGenreResponse{Id: -1}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.IdGenreResponse{Id: -1}, errWithDetails.Err()
 	}
 	entity.Id = id
 	log.WithFields(log.Fields{
 		"genre": entity,
-	}).Info("create genre")
+	}).Info("account has been successfully created")
 	return &pb.IdGenreResponse{Id: int64(id)}, nil
 }
 
 func (g GenreServer) DeleteGenre(ctx context.Context, in *pb.IdGenreRequest) (*pb.StatusGenreResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"genre": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusGenreResponse{Message: "empty fields error"}, err
+	}
 	entity := new(data.Genre)
 	entity.Id = int(in.GetId())
 	err := g.data.DeleteGenre(*entity)
@@ -45,8 +62,13 @@ func (g GenreServer) DeleteGenre(ctx context.Context, in *pb.IdGenreRequest) (*p
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to delete genre: %s", err)
-		return &pb.StatusGenreResponse{Message: "got an error when tried to delete genre"},
-			fmt.Errorf("got an error when tried to delete genre: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to delete genre: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.StatusGenreResponse{Message: "got an error when tried to delete genre"},
+				status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.StatusGenreResponse{Message: "got an error when tried to delete genre"}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"id": entity.Id,
@@ -55,6 +77,18 @@ func (g GenreServer) DeleteGenre(ctx context.Context, in *pb.IdGenreRequest) (*p
 }
 
 func (g GenreServer) UpdateGenre(ctx context.Context, in *pb.GenreRequest) (*pb.StatusGenreResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"genre": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusGenreResponse{Message: "empty fields error"}, err
+	}
+	if err := checkGenreRequest(in); err != nil {
+		log.WithFields(log.Fields{
+			"genre": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.StatusGenreResponse{Message: "empty fields error"}, err
+	}
 	entity := data.Genre{
 		Id:   int(in.GetId()),
 		Name: in.GetName(),
@@ -64,8 +98,13 @@ func (g GenreServer) UpdateGenre(ctx context.Context, in *pb.GenreRequest) (*pb.
 		log.WithFields(log.Fields{
 			"genre": entity,
 		}).Warningf("got an error when tried to update genre: %s", err)
-		return &pb.StatusGenreResponse{Message: "got an error when tried to update genre"},
-			fmt.Errorf("got an error when tried to update genre: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to update genre: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.StatusGenreResponse{Message: "got an error when tried to update genre"},
+				status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.StatusGenreResponse{Message: "got an error when tried to update genre"}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"genre": entity,
@@ -74,6 +113,12 @@ func (g GenreServer) UpdateGenre(ctx context.Context, in *pb.GenreRequest) (*pb.
 }
 
 func (g GenreServer) GetGenre(ctx context.Context, in *pb.IdGenreRequest) (*pb.GenreResponse, error) {
+	if err := checkId(in.GetId()); err != nil {
+		log.WithFields(log.Fields{
+			"genre": in,
+		}).Warningf("empty fields error: %s", err)
+		return &pb.GenreResponse{}, err
+	}
 	entity := new(data.Genre)
 	entity.Id = int(in.Id)
 	entry, err := g.data.FindByIdGenre(*entity)
@@ -81,8 +126,12 @@ func (g GenreServer) GetGenre(ctx context.Context, in *pb.IdGenreRequest) (*pb.G
 		log.WithFields(log.Fields{
 			"id": entity.Id,
 		}).Warningf("got an error when tried to get genre: %s", err)
-		return &pb.GenreResponse{},
-			fmt.Errorf("got an error when tried to get genre: %w", err)
+		s := status.Newf(codes.Internal, "got an error when tried to get genre: %s, with error: %w", in, err)
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return &pb.GenreResponse{}, status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return &pb.GenreResponse{}, errWithDetails.Err()
 	}
 	log.WithFields(log.Fields{
 		"id": entity.Id,
@@ -91,4 +140,16 @@ func (g GenreServer) GetGenre(ctx context.Context, in *pb.IdGenreRequest) (*pb.G
 		Id:   int64(entry.Id),
 		Name: entry.Name,
 	}, nil
+}
+
+func checkGenreRequest(in *pb.GenreRequest) error {
+	if in.GetName() == "" {
+		s := status.Newf(codes.InvalidArgument, "didn't specify the field {Name}: %s", in.GetName())
+		errWithDetails, err := s.WithDetails(in)
+		if err != nil {
+			return status.Errorf(codes.Unknown, "can't covert status to status with details %v", s)
+		}
+		return errWithDetails.Err()
+	}
+	return nil
 }
